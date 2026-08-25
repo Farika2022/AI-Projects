@@ -1,0 +1,1528 @@
+import { useState, useEffect, useMemo, /*useRef*/ } from 'react';
+import { useLocation } from 'react-router-dom';
+import { useAuth } from '@/context';
+import {
+  fetchUsers,
+  fetchPromptHistories,
+  fetchPostStudyResponses,
+  deletePromptHistoryItem,
+  deletePostStudyResponseItem,
+  removeUser,
+  renameUser,
+  createNewUser,
+  type User,
+  type EditHistory,
+  type PostStudyResponse
+} from '@/utils';
+import { 
+  Shield, 
+  Users, 
+  Database, 
+  Search, 
+  LayoutDashboard, 
+  Activity, 
+  Calendar, 
+  ArrowUpRight,
+  Filter,
+  Download,
+  MoreHorizontal,
+  Clock,
+  LayoutGrid,
+  List,
+  ArrowRight,
+  MessageSquareQuote,
+  Trash2
+} from 'lucide-react';
+
+// Helper for conditional classes
+const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(' ');
+
+type MethodFilterState = {
+  text: boolean;
+  voice: boolean;
+  inpainting: boolean;
+  dragdrop: boolean;
+};
+
+type MethodKey = keyof MethodFilterState;
+
+const defaultMethodFilters: MethodFilterState = {
+  text: true,
+  voice: true,
+  inpainting: true,
+  dragdrop: true,
+};
+
+const methodBadgeClassByMethod: Record<MethodKey, string> = {
+  text: 'bg-blue-500 text-white',
+  voice: 'bg-green-500 text-white',
+  inpainting: 'bg-orange-500 text-white',
+  dragdrop: 'bg-pink-500 text-white',
+};
+
+const isMethodKey = (value: string): value is MethodKey =>
+  value === 'text' || value === 'voice' || value === 'inpainting' || value === 'dragdrop';
+
+const ITEMS_PER_PAGE = 200;
+
+const csvEscape = (value: unknown) => {
+  const normalized = String(value ?? '').replace(/\r?\n|\r/g, ' ');
+  return `"${normalized.replace(/"/g, '""')}"`;
+};
+
+const downloadCsv = (filenamePrefix: string, headers: string[], rows: unknown[][]) => {
+  const csvContent = [
+    headers.map(csvEscape).join(','),
+    ...rows.map((row) => row.map(csvEscape).join(',')),
+  ].join('\n');
+
+  // Include UTF-8 BOM so Excel correctly detects file encoding.
+  const blob = new Blob(['\uFEFF', csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  anchor.href = url;
+  anchor.download = `${filenamePrefix}-${stamp}.csv`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
+};
+
+const AdminPage = () => {
+  const { user } = useAuth();
+  const location = useLocation();
+  const [users, setUsers] = useState<User[]>([]);
+  const [history, setHistory] = useState<EditHistory[]>([]);
+  const [postStudyResponses, setPostStudyResponses] = useState<PostStudyResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState<'users' | 'prompts' | 'feedback'>('users');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
+  const [showAddMenu, setShowAddMenu] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [selectedMethod, setSelectedMethod] = useState('0');
+  const [isAdminSelection, setIsAdminSelection] = useState('no');
+  const [deleteDialog, setDeleteDialog] = useState<null | {
+    kind: 'prompt' | 'response' | 'user';
+    id: number;
+    blobPath?: string;
+  }>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [showFilterMenu, setShowFilterMenu] = useState(false);
+  const [methodFilters, setMethodFilters] = useState<MethodFilterState>(defaultMethodFilters);
+  const [currentPageByTab, setCurrentPageByTab] = useState<Record<'users' | 'prompts' | 'feedback', number>>({
+    users: 1,
+    prompts: 1,
+    feedback: 1,
+  });
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const loadData = async () => {
+      setLoading(true);
+
+      try {
+        // Simulate a slight delay for smoother loading experience
+        await new Promise(resolve => setTimeout(resolve, 800));
+        const [usersData, historyData, postStudyResponseData] = await Promise.all([
+          fetchUsers(),
+          fetchPromptHistories(),
+          fetchPostStudyResponses(),
+        ]);
+
+        if (isCancelled) return;
+
+        setUsers(usersData);
+        setHistory(historyData);
+        setPostStudyResponses(
+          [...postStudyResponseData].sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          )
+        );
+      } catch (error) {
+        if (!isCancelled) {
+          console.error("Failed to load admin data", error);
+        }
+      } finally {
+        if (!isCancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [location.key, location.pathname]);
+
+  // Calculate stats
+  const stats = useMemo(() => {
+    const totalUsers = users.length;
+    const totalEdits = history.length;
+    const activeUsersCount = new Set(history.map(h => h.userId)).size;
+    const avgEditsPerUser = totalUsers ? (totalEdits / totalUsers).toFixed(1) : '0';
+
+    return [
+      { 
+        label: 'Total Users', 
+        value: totalUsers, 
+        icon: Users, 
+        color: 'text-blue-600', 
+        bg: 'bg-blue-50',
+        trend: '+12% from last month' 
+      },
+      { 
+        label: 'Total Edits', 
+        value: totalEdits, 
+        icon: Database, 
+        color: 'text-purple-600', 
+        bg: 'bg-purple-50',
+        trend: '+24% from last month'
+      },
+      { 
+        label: 'Active Users', 
+        value: activeUsersCount, 
+        icon: Activity, 
+        color: 'text-green-600', 
+        bg: 'bg-green-50',
+        trend: '+5% from last month'
+      },
+      { 
+        label: 'Avg. Edits/User', 
+        value: avgEditsPerUser, 
+        icon: LayoutDashboard, 
+        color: 'text-orange-600', 
+        bg: 'bg-orange-50',
+        trend: 'Stable'
+      },
+    ];
+  }, [users, history]);
+
+  if(false)console.log(stats); // Warning remover
+
+  const userNameById = useMemo(() => {
+    const m = new Map<number, string>();
+    users.forEach((u) => m.set(u.id, u.username));
+    return m;
+  }, [users]);
+
+  const userMethodById = useMemo(() => {
+    const m = new Map<number, MethodKey>();
+    users.forEach((u) => {
+      m.set(u.id, (u.assignedMethod || 'text') as MethodKey);
+    });
+    return m;
+  }, [users]);
+
+  const getEntryMethod = (entry: EditHistory): MethodKey => {
+    const directMethod = (entry as EditHistory & { assignedMethod?: string }).assignedMethod;
+    if (directMethod && isMethodKey(directMethod)) {
+      return directMethod;
+    }
+    return userMethodById.get(entry.userId) || 'text';
+  };
+
+  const getHistoryUserName = (entry: EditHistory) => {
+    const savedName = entry.username?.trim();
+    if (savedName) return savedName;
+    return userNameById.get(entry.userId) || `User #${entry.userId}`;
+  };
+
+  const getHistoryOutputImages = (entry: EditHistory): string[] => {
+    if (Array.isArray(entry.outputImages) && entry.outputImages.length > 0) {
+      return entry.outputImages;
+    }
+    return entry.outputImage ? [entry.outputImage] : [];
+  };
+
+  const getSelectedOutputImage = (entry: EditHistory): string => {
+    const outputs = getHistoryOutputImages(entry);
+    if (outputs.length === 0) {
+      return entry.outputImage;
+    }
+
+    const selectedIndex = Number.isFinite(entry.selectedOutputIndex)
+      ? Math.max(0, Math.min(Number(entry.selectedOutputIndex), outputs.length - 1))
+      : 0;
+
+    return outputs[selectedIndex] || outputs.find(Boolean) || outputs[0] || entry.outputImage;
+  };
+
+  const filteredUsers = useMemo(() =>
+    users.filter((u) => {
+      const methodKey = (u.assignedMethod || 'text') as keyof MethodFilterState;
+      if (!methodFilters[methodKey]) return false;
+
+      const q = searchTerm.toLowerCase().trim();
+      if (!q) return true;
+
+      return [u.username, String(u.id), u.role, u.assignedMethod]
+        .some((field) => field.toLowerCase().includes(q));
+    }),
+  [users, searchTerm, methodFilters]);
+
+  const filteredHistory = useMemo(() =>
+    history.filter((h) => {
+      const methodForEntry = userMethodById.get(h.userId);
+      if (methodForEntry && !methodFilters[methodForEntry]) return false;
+
+      const q = searchTerm.toLowerCase().trim();
+      if (!q) return true;
+
+      const date = new Date(h.timestamp);
+      return [
+        h.prompt,
+        getHistoryUserName(h),
+        String(h.userId),
+        String(h.id),
+        date.toLocaleDateString(),
+        date.toLocaleTimeString(),
+      ].some((field) => field.toLowerCase().includes(q));
+    }),
+  [history, searchTerm, userNameById, userMethodById, methodFilters]);
+
+  const filteredFeedbacks = useMemo(() => {
+    const q = searchTerm.toLowerCase().trim();
+    return postStudyResponses.filter((f) => {
+      const methodForEntry = userMethodById.get(f.userId);
+      if (methodForEntry && !methodFilters[methodForEntry]) return false;
+      if (!q) return true;
+
+      const userName = userNameById.get(f.userId) || '';
+
+      return [
+        userName,
+        String(f.userId),
+        String(f.id),
+        f.responses.age || '',
+        f.responses.gender || '',
+        f.responses.awareOfAI || '',
+        f.responses.usedAI || '',
+        f.responses.easyToUse || '',
+        f.responses.expressIdeas || '',
+        f.responses.matchedExpectation || '',
+        f.responses.easyEdit || '',
+        f.responses.feltEngaged || '',
+        f.responses.overallSatisfaction || '',
+        f.responses.followUpInterview || '',
+        f.responses.additionalComments || '',
+      ].some((field) => field.toLowerCase().includes(q));
+    });
+  }, [postStudyResponses, searchTerm, userNameById, userMethodById, methodFilters]);
+
+  const totalItemsForActiveTab =
+    activeTab === 'users'
+      ? filteredUsers.length
+      : activeTab === 'prompts'
+        ? filteredHistory.length
+        : filteredFeedbacks.length;
+
+  const totalPagesForActiveTab = Math.max(1, Math.ceil(totalItemsForActiveTab / ITEMS_PER_PAGE));
+  const currentPage = Math.min(currentPageByTab[activeTab], totalPagesForActiveTab);
+  const paginationStartIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginationEndIndex = paginationStartIndex + ITEMS_PER_PAGE;
+
+  const paginatedUsers = useMemo(
+    () => filteredUsers.slice(paginationStartIndex, paginationEndIndex),
+    [filteredUsers, paginationStartIndex, paginationEndIndex]
+  );
+
+  const paginatedHistory = useMemo(
+    () => filteredHistory.slice(paginationStartIndex, paginationEndIndex),
+    [filteredHistory, paginationStartIndex, paginationEndIndex]
+  );
+
+  const paginatedFeedbacks = useMemo(
+    () => filteredFeedbacks.slice(paginationStartIndex, paginationEndIndex),
+    [filteredFeedbacks, paginationStartIndex, paginationEndIndex]
+  );
+
+  useEffect(() => {
+    setCurrentPageByTab((prev) => ({
+      ...prev,
+      [activeTab]: 1,
+    }));
+  }, [activeTab, searchTerm, methodFilters]);
+
+  useEffect(() => {
+    setCurrentPageByTab((prev) => {
+      const nextPage = Math.min(prev[activeTab], totalPagesForActiveTab);
+      if (nextPage === prev[activeTab]) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        [activeTab]: nextPage,
+      };
+    });
+  }, [activeTab, totalPagesForActiveTab]);
+
+  const changePage = (direction: 'previous' | 'next') => {
+    setCurrentPageByTab((prev) => {
+      const current = prev[activeTab];
+      const nextPage = direction === 'previous'
+        ? Math.max(1, current - 1)
+        : Math.min(totalPagesForActiveTab, current + 1);
+
+      if (nextPage === current) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        [activeTab]: nextPage,
+      };
+    });
+  };
+
+  const toggleMethodFilter = (method: keyof MethodFilterState) => {
+    setMethodFilters((prev) => ({
+      ...prev,
+      [method]: !prev[method],
+    }));
+  };
+
+  const exportAdminReport = () => {
+    const promptsByUserId = history.reduce<Record<number, EditHistory[]>>((acc, item) => {
+      if (!acc[item.userId]) {
+        acc[item.userId] = [];
+      }
+      acc[item.userId].push(item);
+      return acc;
+    }, {});
+
+    const responsesByUserId = postStudyResponses.reduce<Record<number, PostStudyResponse[]>>((acc, item) => {
+      if (!acc[item.userId]) {
+        acc[item.userId] = [];
+      }
+      acc[item.userId].push(item);
+      return acc;
+    }, {});
+
+    const headers = [
+      'User ID',
+      'Username',
+      'Role',
+      'Assigned Method',
+      'Generation Count',
+      'Generation ID',
+      'Generation Timestamp',
+      'Prompt',
+      'Version',
+      'Input Image URL',
+      'Selected Output Image URL',
+      'Output Option 1 URL',
+      'Output Option 2 URL',
+      'Output Option 3 URL',
+      'Selected Output Index',
+      'Survey ID',
+      'Survey Submitted At',
+      'Age',
+      'Gender',
+      'Aware Of AI',
+      'Used AI Before',
+      'Easy To Use',
+      'Express Ideas',
+      'Matched Expectation',
+      'Easy Edit',
+      'Felt Engaged',
+      'Overall Satisfaction',
+      'Open To Follow-up Interview',
+      'Additional Comments',
+    ];
+
+    const rows = users.flatMap((u) => {
+      const userPrompts = promptsByUserId[u.id] || [];
+      const userResponses = responsesByUserId[u.id] || [];
+      const rowCount = Math.max(userPrompts.length, userResponses.length, 1);
+
+      return Array.from({ length: rowCount }, (_, index) => {
+        const generation = userPrompts[index];
+        const survey = userResponses[index];
+        const outputs = generation ? getHistoryOutputImages(generation) : [];
+        const selectedOutput = generation ? getSelectedOutputImage(generation) : '';
+
+        return [
+          u.id,
+          u.username,
+          u.role,
+          u.assignedMethod,
+          userPrompts.length,
+          generation?.id ?? '',
+          generation?.timestamp ? new Date(generation.timestamp).toISOString() : '',
+          generation?.prompt ?? '',
+          generation?.version ?? '',
+          generation?.inputImage ?? '',
+          selectedOutput,
+          outputs[0] ?? '',
+          outputs[1] ?? '',
+          outputs[2] ?? '',
+          generation?.selectedOutputIndex ?? '',
+          survey?.id ?? '',
+          survey?.createdAt ? new Date(survey.createdAt).toISOString() : '',
+          survey?.responses?.age ?? '',
+          survey?.responses?.gender ?? '',
+          survey?.responses?.awareOfAI ?? '',
+          survey?.responses?.usedAI ?? '',
+          survey?.responses?.easyToUse ?? '',
+          survey?.responses?.expressIdeas ?? '',
+          survey?.responses?.matchedExpectation ?? '',
+          survey?.responses?.easyEdit ?? '',
+          survey?.responses?.feltEngaged ?? '',
+          survey?.responses?.overallSatisfaction ?? '',
+          survey?.responses?.followUpInterview ?? '',
+          survey?.responses?.additionalComments ?? '',
+        ];
+      });
+    });
+
+    downloadCsv('admin-report', headers, rows);
+  };
+
+  const exportSurveyData = () => {
+    const headers = [
+      'Survey ID',
+      'Survey Submitted At',
+      'User ID',
+      'Username',
+      'Assigned Method',
+      'Age',
+      'Gender',
+      'Aware Of AI',
+      'Used AI Before',
+      'Easy To Use',
+      'Express Ideas',
+      'Matched Expectation',
+      'Easy Edit',
+      'Felt Engaged',
+      'Overall Satisfaction',
+      'Open To Follow-up Interview',
+      'Additional Comments',
+    ];
+
+    const rows = postStudyResponses.map((survey) => [
+      survey.id,
+      survey.createdAt ? new Date(survey.createdAt).toISOString() : '',
+      survey.userId,
+      userNameById.get(survey.userId) || `User #${survey.userId}`,
+      userMethodById.get(survey.userId) || '',
+      survey.responses?.age ?? '',
+      survey.responses?.gender ?? '',
+      survey.responses?.awareOfAI ?? '',
+      survey.responses?.usedAI ?? '',
+      survey.responses?.easyToUse ?? '',
+      survey.responses?.expressIdeas ?? '',
+      survey.responses?.matchedExpectation ?? '',
+      survey.responses?.easyEdit ?? '',
+      survey.responses?.feltEngaged ?? '',
+      survey.responses?.overallSatisfaction ?? '',
+      survey.responses?.followUpInterview ?? '',
+      survey.responses?.additionalComments ?? '',
+    ]);
+
+    downloadCsv('survey-data', headers, rows);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteDialog) return;
+
+    setDeleteError(null);
+    setIsDeleting(true);
+
+    try {
+      if (deleteDialog.kind === 'prompt') {
+        await deletePromptHistoryItem(deleteDialog.id, deleteDialog.blobPath);
+        setHistory((prev) => prev.filter((item) => item.id !== deleteDialog.id));
+      } else if (deleteDialog.kind === 'response') {
+        await deletePostStudyResponseItem(deleteDialog.id, deleteDialog.blobPath);
+        setPostStudyResponses((prev) => prev.filter((item) => item.id !== deleteDialog.id));
+      } else {
+        const userToDelete = users.find((u) => u.id === deleteDialog.id);
+        if (!userToDelete) {
+          throw new Error('User not found.');
+        }
+
+        await removeUser(userToDelete);
+        setUsers((prev) => prev.filter((u) => u.id !== deleteDialog.id));
+      }
+
+      setDeleteDialog(null);
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : 'Failed to delete item.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  if (!user || user.role !== 'admin') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[80vh] bg-gray-50/50">
+        <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 max-w-md w-full text-center">
+          <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Shield size={40} className="text-red-500" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Restricted</h1>
+          <p className="text-gray-500 mb-6">
+            You do not have the necessary permissions to view this dashboard. Please contact your administrator.
+          </p>
+          <button 
+            onClick={() => window.history.back()}
+            className="px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium w-full"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50/50 pb-20">
+      {/* Header Section */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="container mx-auto px-6 py-4 max-w-7xl">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                <span>Dashboard</span>
+                <span>/</span>
+                <span className="text-gray-900 font-medium">Overview</span>
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <Shield className="w-7 h-7 text-emerald-600" />
+                Admin Dashboard
+              </h1>
+              <p className="text-sm text-gray-500 mt-1">
+                Signed in as <span className="font-semibold text-gray-800">{user.username}</span>
+                <span className="mx-2 text-gray-300">·</span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-e-50 text-e-700 px-2 py-0.5 text-xs font-medium">
+                  Administrator
+                </span>
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              {/*
+              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-md text-sm font-medium text-gray-600">
+                <Calendar size={14} />
+                <span>Last 30 Days</span>
+              </div>
+              */}
+              <button
+                onClick={exportSurveyData}
+                disabled={loading}
+                className="flex items-center gap-2 px-4 py-2 bg-e-600 text-black rounded-lg hover:bg-e-700 transition-all shadow-sm hover:shadow text-sm font-medium disabled:opacity-60"
+              >
+                <Download size={16} />
+                Export Survey Data
+              </button>
+              <button
+                onClick={exportAdminReport}
+                disabled={loading}
+                className="flex items-center gap-2 px-4 py-2 bg-e-600 text-black rounded-lg hover:bg-e-700 transition-all shadow-sm hover:shadow text-sm font-medium disabled:opacity-60"
+              >
+                <Download size={16} />
+                Export Report
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-6 py-8 max-w-7xl space-y-8">
+        {/* Stats Grid */}
+        {/*
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {stats.map((stat, index) => (
+            <div 
+              key={index} 
+              className={cn(
+                "bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-all hover:shadow-md",
+                loading && "animate-pulse"
+              )}
+            >
+              {loading ? (
+                <div className="space-y-3">
+                  <div className="h-4 w-24 bg-gray-100 rounded"></div>
+                  <div className="h-8 w-16 bg-gray-100 rounded"></div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex justify-between items-start mb-4">
+                    <div className={cn("p-2 rounded-lg", stat.bg)}>
+                      <stat.icon size={20} className={stat.color} />
+                    </div>
+                    <span className="flex items-center text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                      <ArrowUpRight size={12} className="mr-1" />
+                      {stat.trend}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">{stat.label}</p>
+                    <h3 className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</h3>
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+        */}
+        {/* Main Content Area */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden min-h-[600px] flex flex-col">
+
+          <div className="p-4 border-b border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gray-50/50"> {/*Toolbar with Tabs & Search*/}
+
+            <div className="flex bg-gray-200/50 p-1 rounded-lg"> {/*Tabs for Users, Prompts History, and Result Feedback*/}
+              <button
+                onClick={() => setActiveTab('users')}
+                className={cn(
+                  "px-4 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2",
+                  activeTab === 'users' 
+                    ? "bg-white text-gray-900 shadow-sm" 
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-200/50"
+                )}
+              >
+                <Users size={16} />
+                Users & Methods
+              </button>
+              <button
+                onClick={() => setActiveTab('prompts')}
+                className={cn(
+                  "px-4 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2",
+                  activeTab === 'prompts' 
+                    ? "bg-white text-gray-900 shadow-sm" 
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-200/50"
+                )}
+              >
+                <Database size={16} />
+                Prompts History
+              </button>
+              <button
+                onClick={() => setActiveTab('feedback')}
+                className={cn(
+                  "px-4 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2",
+                  activeTab === 'feedback'
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-200/50"
+                )}
+              >
+                <MessageSquareQuote size={16} />
+                Post-Study Responses
+              </button>
+            </div>
+            
+            <div className="flex items-center gap-3 w-full md:w-auto"> {/*Add User button*/}
+              {activeTab === 'users' && (
+                <div className="relative">
+                  <button 
+                    onClick={() => setShowAddMenu(!showAddMenu)}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all shadow-sm hover:shadow text-sm font-medium"
+                  >
+                    Add User
+                  </button>
+
+                  {showAddMenu && (
+                    <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-30 p-4 space-y-4">
+                      <input
+                        type="text"
+                        placeholder="New username"
+                        value={newUsername}
+                        onChange={(e) => setNewUsername(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500 focus:outline-none"
+                      />
+
+                      <select
+                        value={selectedMethod}
+                        onChange={(e) => setSelectedMethod(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500 focus:outline-none bg-white"
+                      >
+                        <option value="0">Text</option>
+                        <option value="1">Voice</option>
+                        <option value="2">Inpainting</option>
+                        <option value="3">Drag-and-Drop</option>
+                      </select>
+
+                      <select
+                        value={isAdminSelection}
+                        onChange={(e) => setIsAdminSelection(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500 focus:outline-none bg-white"
+                      >
+                        <option value="no">Role: User</option>
+                        <option value="yes">Role: Admin</option>
+                      </select>
+
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setShowAddMenu(false);
+                            setNewUsername('');
+                            setSelectedMethod('0');
+                            setIsAdminSelection('no');
+                          }}
+                          className="flex-1 px-3 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={async () => {
+                            try {
+                              const createdUser = await createNewUser(newUsername, selectedMethod, isAdminSelection === 'yes');
+                              setUsers((prev) => [...prev, createdUser]);
+                              setShowAddMenu(false);
+                              setNewUsername('');
+                              setSelectedMethod('0');
+                              setIsAdminSelection('no');
+                            } catch (error) {
+                              console.error('Failed to create user', error);
+                            }
+                          }}
+                          className="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                        >
+                          Confirm
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+              
+            <div className="flex items-center gap-3 w-full md:w-auto md:ml-auto"> {/*Search bar*/}
+              {activeTab === 'prompts' && (
+                <div className="flex bg-gray-200/50 p-1 rounded-lg mr-2">
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={cn(
+                      "p-2 rounded-md transition-all",
+                      viewMode === 'list' 
+                        ? "bg-white text-gray-900 shadow-sm" 
+                        : "text-gray-500 hover:text-gray-900"
+                    )}
+                    title="List View"
+                  >
+                    <List size={16} />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={cn(
+                      "p-2 rounded-md transition-all",
+                      viewMode === 'grid' 
+                        ? "bg-white text-gray-900 shadow-sm" 
+                        : "text-gray-500 hover:text-gray-900"
+                    )}
+                    title="Grid View"
+                  >
+                    <LayoutGrid size={16} />
+                  </button>
+                </div>
+              )}
+              <div className="relative w-full md:w-80 shrink-0">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none transition-all"
+                />
+              </div>
+              <div className="relative">
+                <button
+                  onClick={() => setShowFilterMenu((prev) => !prev)}
+                  className={cn(
+                    'p-2 rounded-lg border border-gray-200 bg-white transition-colors',
+                    showFilterMenu ? 'text-e-700 bg-e-50 border-e-200' : 'text-gray-500 hover:bg-gray-100'
+                  )}
+                  title="Search filters"
+                >
+                  <Filter size={16} />
+                </button>
+
+                {showFilterMenu ? (
+                  <div className="absolute right-0 mt-2 w-64 rounded-lg border border-gray-200 bg-white p-3 shadow-lg z-30">
+                    <div className="mb-2">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Input Types</span>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={methodFilters.text}
+                          onChange={() => toggleMethodFilter('text')}
+                          className="h-4 w-4 rounded border-gray-300 text-e-600 focus:ring-e-500/30"
+                        />
+                        <span>Text</span>
+                      </label>
+                      <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={methodFilters.voice}
+                          onChange={() => toggleMethodFilter('voice')}
+                          className="h-4 w-4 rounded border-gray-300 text-e-600 focus:ring-e-500/30"
+                        />
+                        <span>Voice</span>
+                      </label>
+                      <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={methodFilters.inpainting}
+                          onChange={() => toggleMethodFilter('inpainting')}
+                          className="h-4 w-4 rounded border-gray-300 text-e-600 focus:ring-e-500/30"
+                        />
+                        <span>Inpainting</span>
+                      </label>
+                      <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={methodFilters.dragdrop}
+                          onChange={() => toggleMethodFilter('dragdrop')}
+                          className="h-4 w-4 rounded border-gray-300 text-e-600 focus:ring-e-500/30"
+                        />
+                        <span>Drag&amp;Drop</span>
+                      </label>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          {/* Table Content */}
+          <div className="flex-1 overflow-x-auto">
+            {loading ? (
+              <div className="p-8 space-y-4">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 animate-pulse">
+                    <div className="w-10 h-10 bg-gray-100 rounded-full"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-gray-100 rounded w-1/4"></div>
+                      <div className="h-3 bg-gray-100 rounded w-1/3"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <>
+                {activeTab === 'users' ? (
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-100 bg-gray-50/50 text-xs uppercase tracking-wider text-gray-500 font-semibold">
+                        <th className="p-4">User Details</th>
+                        <th className="p-4">Role</th>
+                        <th className="p-4">Method</th>
+                        {/*<th className="p-4">Status</th>*/}
+                        <th className="p-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {paginatedUsers.length > 0 ? (
+                        paginatedUsers.map(user => (
+                          <tr key={user.id} className="hover:bg-gray-50/50 transition-colors group">
+                            <td className="p-4">
+                              <div className="flex items-center gap-3">
+                                <div className="relative">
+                                  {user.avatar ? (
+                                    <img src={user.avatar} alt="" className="w-10 h-10 rounded-full bg-gray-100 object-cover ring-2 ring-white shadow-sm" />
+                                  ) : (
+                                    <div className="w-10 h-10 rounded-full bg-e-100 text-e-700 flex items-center justify-center text-sm font-bold ring-2 ring-white shadow-sm">
+                                      {user.username.slice(0, 2).toUpperCase()} {/*Shortened User PFP*/}
+                                    </div>
+                                  )}
+                                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+                                </div>
+                                <div>
+                                  <div className="font-semibold text-gray-900">{user.username}</div> {/*Username*/}
+                                  <div className="text-xs text-gray-500 font-mono">ID: #{user.id}</div> {/*User ID*/}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="p-4"> {/*USER ROLE*/}
+                              <span className={cn(
+                                "px-2.5 py-1 rounded-full text-xs font-medium border",
+                                user.role === 'admin' 
+                                  ? "bg-purple-50 text-purple-700 border-purple-100" 
+                                  : "bg-gray-50 text-gray-600 border-gray-100"
+                              )}>
+                                {user.role}
+                              </span>
+                            </td>
+                            <td className="p-4">
+                              <div className="flex items-center gap-2"> {/*METHOD*/}
+                                <span className={cn(
+                                  "w-2 h-2 rounded-full",
+                                  user.assignedMethod === 'text' ? "bg-blue-500" :
+                                  user.assignedMethod === 'voice' ? "bg-green-500" :
+                                  user.assignedMethod === 'inpainting' ? "bg-orange-500" : "bg-pink-500"
+                                )}></span>
+                                <span className="text-sm text-gray-700 capitalize font-medium">
+                                  {user.assignedMethod}
+                                </span>
+                              </div>
+                            </td>
+                            {/*<td className="p-4">
+                              <span className="inline-flex items-center px-2 py-1 rounded-md bg-green-50 text-green-700 text-xs font-medium">
+                                Active
+                              </span>
+                            </td>*/}
+                            <td className="p-4 text-right">
+                              <div className="relative group">
+                                <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
+                                  <MoreHorizontal size={16} />
+                                  <div className="absolute right-0 mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
+                                    <button 
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
+                                    onClick={async () => {
+                                      const newName = prompt('Input new name for user');
+                                      const normalizedNewName = newName?.trim().toLowerCase();
+                                      if (normalizedNewName) {
+                                        try {
+                                          await renameUser(user, normalizedNewName);
+                                          setUsers((prev) =>
+                                            prev.map((u) => (u.id === user.id ? { ...u, username: normalizedNewName } : u))
+                                          );
+                                        } catch (error) {
+                                          console.error('Failed to rename user', error);
+                                        }
+                                      }
+                                    }}
+                                    >
+                                    Rename User
+                                    </button>
+                                  <button className="w-full text-left px-4 py-2 bg-red-600 text-sm text-gray-700 hover:bg-gray-50 rounded-lg hover:bg-red-700" onClick={() => {
+                                    setDeleteError(null);
+                                    setDeleteDialog({ kind: 'user', id: user.id });
+                                  }}> {/*Remove User & Reload this window*/}
+                                    Remove User
+                                  </button>
+                                </div>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={4} className="p-12 text-center">
+                            <div className="mx-auto w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                              <Users className="text-gray-300" size={32} />
+                            </div>
+                            <h3 className="text-lg font-medium text-gray-900">No users found</h3>
+                            <p className="text-gray-500 mt-1">Try adjusting your search terms</p>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                ) : (
+                  activeTab === 'prompts' ? (
+                  viewMode === 'list' ? (
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-gray-100 bg-gray-50/50 text-xs uppercase tracking-wider text-gray-500 font-semibold">
+                          <th className="p-4">Timestamp</th>
+                          <th className="p-4">User</th>
+                          <th className="p-4">Prompt Details</th>
+                          <th className="p-4">Transformation</th>
+                          <th className="p-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {paginatedHistory.length > 0 ? (
+                          paginatedHistory.map(item => (
+                            (() => {
+                              const historyUserName = getHistoryUserName(item);
+                              const outputImages = getHistoryOutputImages(item);
+                              const selectedOutputImage = getSelectedOutputImage(item);
+                              const userInitials = historyUserName.slice(0, 2).toUpperCase();
+                              return (
+                            <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
+                              <td className="p-4 align-top">
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-medium text-gray-900">
+                                    {new Date(item.timestamp).toLocaleDateString()}
+                                  </span>
+                                  <span className="text-xs text-gray-500 flex items-center gap-1">
+                                    <Clock size={10} />
+                                    {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="p-4 align-top">
+                                <div className="flex items-center gap-2">
+                                  <div className={cn(
+                                    'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold',
+                                    methodBadgeClassByMethod[getEntryMethod(item)]
+                                  )}>
+                                    {userInitials}
+                                  </div>
+                                  <span className="text-sm text-gray-700 font-medium">{historyUserName}</span>
+                                  <span className="text-sm text-gray-500 font-mono">#{item.userId}</span>
+                                </div>
+                              </td>
+                              <td className="p-4 max-w-md align-top">
+                                <div className="flex flex-col gap-1">
+                                  <p className="text-sm text-gray-900 font-medium leading-relaxed">
+                                    "{item.prompt}"
+                                  </p>
+                                  <span className="inline-flex self-start items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                                    v{item.version}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="p-4 align-top">
+                                <div className="flex items-center gap-2">
+                                  <a 
+                                    href={item.inputImage || '#'}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className={cn(
+                                      "relative group/img w-16 h-16 rounded-lg overflow-hidden border border-gray-200 shadow-sm bg-gray-100 block",
+                                      !item.inputImage && "pointer-events-none cursor-default"
+                                    )}
+                                  >
+                                    {item.inputImage ? (
+                                      <img src={item.inputImage} alt="input" className="w-full h-full object-cover" />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">N/A</div>
+                                    )}
+                                    {item.inputImage && (
+                                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium">
+                                        View
+                                      </div>
+                                    )}
+                                  </a>
+                                  <ArrowRight size={16} className="text-gray-400" />
+                                  <a 
+                                    href={selectedOutputImage}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="relative group/img w-16 h-16 rounded-lg overflow-hidden border border-gray-200 shadow-sm bg-gray-100 block"
+                                  >
+                                    <img src={selectedOutputImage} alt="output" className="w-full h-full object-cover" />
+                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium">
+                                      View
+                                    </div>
+                                  </a>
+                                  <div className="ml-2 flex items-center gap-1">
+                                    {outputImages.slice(0, 3).map((url, idx) => (
+                                      <a
+                                        key={`${item.id}-option-${idx}`}
+                                        href={url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="relative h-8 w-8 overflow-hidden rounded border border-gray-200"
+                                        title={`Output option ${idx + 1}`}
+                                      >
+                                        <img src={url} alt={`option ${idx + 1}`} className="h-full w-full object-cover" />
+                                      </a>
+                                    ))}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="p-4 text-right align-top">
+                                <div className="inline-flex items-center gap-2">
+                                  <button
+                                    onClick={() => {
+                                      // Copy username, method and prompt to clipboard
+                                      const methodName = getEntryMethod(item);
+                                      const promptText = item.prompt;
+                                      const clipboardText = `${historyUserName} [${methodName.charAt(0).toUpperCase() + methodName.slice(1)}] Prompt: "${promptText}"`;
+                                      
+                                      navigator.clipboard.writeText(clipboardText);
+
+                                      // Download selected output image
+                                      fetch(selectedOutputImage)
+                                        .then(res => res.blob())
+                                        .then(blob => {
+                                          const url = URL.createObjectURL(blob);
+                                          const a = document.createElement('a');
+                                          a.href = url;
+                                          a.download = `output_${historyUserName}_(${item.id}).png`;
+                                          document.body.appendChild(a);
+                                          a.click();
+                                          document.body.removeChild(a);
+                                          URL.revokeObjectURL(url);
+                                        })
+                                        .catch(console.error);
+                                      
+                                      // Download input image if it exists
+                                      if (item.inputImage) {
+                                        fetch(item.inputImage)
+                                          .then(res => res.blob())
+                                          .then(blob => {
+                                            const url = URL.createObjectURL(blob);
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = `input_${historyUserName}_(${item.id}).png`;
+                                            document.body.appendChild(a);
+                                            a.click();
+                                            document.body.removeChild(a);
+                                            URL.revokeObjectURL(url);
+                                          })
+                                          .catch(console.error);
+                                      }
+                                    }}
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-e-700 bg-e-50 hover:bg-e-100 rounded-md transition-colors"
+                                  >
+                                    Download Images
+                                    <ArrowUpRight size={12} />
+                                  </button>
+                                  <button
+                                    onClick={() => setDeleteDialog({
+                                      kind: 'prompt',
+                                      id: item.id,
+                                      blobPath: item.blobPath,
+                                    })}
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
+                                  >
+                                    <Trash2 size={12} />
+                                    Remove
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                              );
+                            })()
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={5} className="p-12 text-center">
+                              <div className="mx-auto w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                                <Database className="text-gray-300" size={32} />
+                              </div>
+                              <h3 className="text-lg font-medium text-gray-900">No history found</h3>
+                              <p className="text-gray-500 mt-1">No prompts match your search</p>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <div className="p-6">
+                      {paginatedHistory.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                          {paginatedHistory.map(item => (
+                            (() => {
+                              const historyUserName = getHistoryUserName(item);
+                              const outputImages = getHistoryOutputImages(item);
+                              const selectedOutputImage = getSelectedOutputImage(item);
+                              return (
+                            <div key={item.id} className="group bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col">
+                              <div className="relative aspect-[2/1] bg-gray-100 flex">
+                                {/* Remove button for square view */}
+                                <button
+                                  onClick={() => setDeleteDialog({
+                                    kind: 'prompt',
+                                    id: item.id,
+                                    blobPath: item.blobPath,
+                                  })}
+                                  className="absolute top-20 z-30 inline-flex items-center gap-1 rounded-md bg-e-600/90 px-2 py-1 text-[10px] font-semibold text-white hover:bg-e-700/90"
+                                  title="Remove this prompt history item"
+                                >
+                                  <Trash2 size={10} />
+                                  Remove
+                                </button>
+                                <div className="flex-1 relative border-r border-white/20 group/input">
+                                  {item.inputImage ? (
+                                    <>
+                                      <img src={item.inputImage} alt="input" className="w-full h-full object-cover" />
+                                      <a 
+                                        href={item.inputImage}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="absolute inset-0 bg-black/40 opacity-0 group-hover/input:opacity-100 transition-opacity flex items-center justify-center text-white cursor-pointer z-10"
+                                      >
+                                        <ArrowUpRight size={20} />
+                                      </a>
+                                    </>
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">N/A</div>
+                                  )}
+                                  <div className="absolute top-2 left-2 bg-e-600/90 backdrop-blur-sm text-white text-[10px] px-2 py-0.5 rounded-full pointer-events-none z-20">
+                                    Original
+                                  </div>
+                                </div>
+                                <div className="flex-1 relative group/output">
+                                  <img src={selectedOutputImage} alt="output" className="w-full h-full object-cover" />
+                                  <a 
+                                    href={selectedOutputImage}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="absolute inset-0 bg-black/40 opacity-0 group-hover/output:opacity-100 transition-opacity flex items-center justify-center text-white cursor-pointer z-10"
+                                  >
+                                    <ArrowUpRight size={20} />
+                                  </a>
+                                  <div className="absolute top-2 right-2 bg-e-600/90 backdrop-blur-sm text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm pointer-events-none z-20">
+                                    Result
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="p-4 flex-1 flex flex-col">
+                                <div className="flex items-start justify-between gap-2 mb-3">
+                                  <div className="flex items-center gap-2">
+                                    <div className={cn(
+                                      'rounded-full px-2 py-1 text-sm font-semibold border border-transparent',
+                                      methodBadgeClassByMethod[getEntryMethod(item)]
+                                    )}>
+                                      {historyUserName}
+                                    </div>
+                                    <span className="text-xs text-gray-500 font-medium">User #{item.userId}</span>
+                                  </div>
+                                  <span className="text-[10px] text-gray-400 bg-gray-50 px-2 py-1 rounded-full border border-gray-100">
+                                    v{item.version}
+                                  </span>
+                                </div>
+                                
+                                <p className="text-sm text-gray-900 font-medium leading-relaxed mb-4 line-clamp-3 flex-1" title={item.prompt}>
+                                  "{item.prompt}"
+                                </p>
+                                
+                                {item.claudeEnhanced || item.claudeEvaluation ? (
+                                  <div className="mb-4 mt-1.5 flex flex-wrap items-center gap-1.5">
+                                    {item.claudeEnhanced ? (
+                                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-100 text-violet-700 border border-violet-200">
+                                        Claude-enhanced
+                                      </span>
+                                    ) : null}
+                                    {item.claudeEvaluation ? (
+                                      <span
+                                        title={item.claudeEvaluation.feedback}
+                                        className={cn(
+                                          'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border',
+                                          item.claudeEvaluation.matches
+                                            ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+                                            : 'bg-amber-100 text-amber-700 border-amber-200'
+                                        )}
+                                      >
+                                        Claude check: {item.claudeEvaluation.score}/5
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                ) : (
+                                  <div className="mb-4" />
+                                )}
+
+
+                                {outputImages.length > 1 ? (
+                                  <div className="mb-4 flex items-center gap-1.5">
+                                    {outputImages.slice(0, 3).map((url, idx) => (
+                                      <a
+                                        key={`${item.id}-grid-option-${idx}`}
+                                        href={url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="h-9 w-9 overflow-hidden rounded border border-gray-200"
+                                        title={`Output option ${idx + 1}`}
+                                      >
+                                        <img src={url} alt={`option ${idx + 1}`} className="h-full w-full object-cover" />
+                                      </a>
+                                    ))}
+                                  </div>
+                                ) : null}
+                                
+                                <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                                  <div className="flex items-center gap-1.5">
+                                    <Clock size={12} />
+                                    {new Date(item.timestamp).toLocaleDateString()}
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <Calendar size={12} />
+                                    {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                              );
+                            })()
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-12">
+                          <div className="mx-auto w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                            <Database className="text-gray-300" size={32} />
+                          </div>
+                          <h3 className="text-lg font-medium text-gray-900">No history found</h3>
+                          <p className="text-gray-500 mt-1">No prompts match your search</p>
+                        </div>
+                      )}
+                    </div>
+                  )
+                ) : (
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-100 bg-gray-50/50 text-xs uppercase tracking-wider text-gray-500 font-semibold">
+                        <th className="p-4 w-[140px]">Submitted</th>
+                        <th className="p-4 w-[160px]">User</th>
+                        <th className="p-4 min-w-[180px]">Prior Experience</th>
+                        <th className="p-4 min-w-[240px]">Ratings</th>
+                        <th className="p-4 w-[120px] text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {paginatedFeedbacks.length > 0 ? (
+                        paginatedFeedbacks.map((f) => (
+                          <tr key={f.id} className="hover:bg-gray-50/50 align-top">
+                            <td className="p-4 whitespace-nowrap">
+                              <span className="text-sm font-medium text-gray-900">
+                                {new Date(f.createdAt).toLocaleDateString()}
+                              </span>
+                              <span className="block text-xs text-gray-500 mt-0.5">
+                                {new Date(f.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </td>
+                            <td className="p-4">
+                              <span className="text-sm font-medium text-gray-900">
+                                {userNameById.get(f.userId) ?? `User #${f.userId}`}
+                              </span>
+                              <span className="block text-xs text-gray-500 font-mono">ID {f.userId}</span>
+                            </td>
+                            <td className="p-4 max-w-sm">
+                              <p className="text-sm text-gray-700">
+                                Age: <span className="font-semibold text-gray-900">{f.responses.age || '—'} </span>
+                                Gender: <span className="font-semibold text-gray-900">{f.responses.gender || '—'}</span>
+                              </p>
+                              <p className="text-sm text-gray-700">
+                                Aware of AI: <span className="font-semibold text-gray-900">{f.responses.awareOfAI || '—'}</span>
+                              </p>
+                              <p className="text-sm text-gray-700 mt-1">
+                                Used AI Before: <span className="font-semibold text-gray-900">{f.responses.usedAI || '—'}</span>
+                              </p>
+                            </td>
+                            <td className="p-4 max-w-md">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-1 gap-x-4 text-sm text-gray-700">
+                                <span>Easy to use: <span className="font-semibold text-gray-900">{f.responses.easyToUse || '—'}</span></span>
+                                <span>Express ideas: <span className="font-semibold text-gray-900">{f.responses.expressIdeas || '—'}</span></span>
+                                <span>Matched Expectations: <span className="font-semibold text-gray-900">{f.responses.matchedExpectation || '—'}</span></span>
+                                <span>Easy to Edit: <span className="font-semibold text-gray-900">{f.responses.easyEdit || '—'}</span></span>
+                                <span>Felt Engaged: <span className="font-semibold text-gray-900">{f.responses.feltEngaged || '—'}</span></span>
+                                <span>Overall satisfaction: <span className="font-semibold text-gray-900">{f.responses.overallSatisfaction || '—'}</span></span>
+                              </div>
+                              <p className="mt-2 text-sm text-gray-700">
+                                Open to follow-up interview: <span className="font-semibold text-gray-900">{f.responses.followUpInterview || 'No'}</span>
+                              </p>
+                              <p className="mt-1 text-sm text-gray-700">
+                                Additional comments: <span className="font-semibold text-gray-900">{f.responses.additionalComments || '—'}</span>
+                              </p>
+                            </td>
+                            <td className="p-4 text-right align-top">
+                              <button
+                                onClick={() => setDeleteDialog({
+                                  kind: 'response',
+                                  id: f.id,
+                                  blobPath: f.blobPath,
+                                })}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
+                              >
+                                <Trash2 size={12} />
+                                Remove
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="p-12 text-center">
+                            <div className="mx-auto w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                              <MessageSquareQuote className="text-gray-300" size={32} />
+                            </div>
+                            <h3 className="text-lg font-medium text-gray-900">No post-study responses yet</h3>
+                            <p className="text-gray-500 mt-1 max-w-md mx-auto">
+                              Responses submitted from the Post-Study form will appear here.
+                            </p>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                )
+              )}
+              </>
+            )}
+          </div>
+          
+          {/* Pagination Footer */}
+          <div className="p-4 border-t border-gray-200 bg-gray-50/50 flex items-center justify-between">
+            <span className="text-sm text-gray-500">
+              Showing <span className="font-medium text-gray-900">{totalItemsForActiveTab === 0 ? 0 : paginationStartIndex + 1}</span> to{' '}
+              <span className="font-medium text-gray-900">
+                {Math.min(paginationEndIndex, totalItemsForActiveTab)}
+              </span>{' '}
+              of{' '}
+              <span className="font-medium text-gray-900">
+                {totalItemsForActiveTab}
+              </span>{' '}
+              results
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => changePage('previous')}
+                disabled={currentPage <= 1}
+                className="px-3 py-1 text-sm bg-white border border-gray-200 rounded shadow-sm transition-colors disabled:text-gray-400 disabled:cursor-not-allowed enabled:text-gray-700 enabled:hover:bg-gray-100"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => changePage('next')}
+                disabled={currentPage >= totalPagesForActiveTab}
+                className="px-3 py-1 text-sm bg-white border border-gray-200 rounded shadow-sm transition-colors disabled:text-gray-400 disabled:cursor-not-allowed enabled:text-gray-700 enabled:hover:bg-gray-100"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {deleteDialog ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">Are you sure?</h3>
+            <p className="mt-2 text-sm text-gray-600">
+              This will permanently remove this {
+                deleteDialog.kind === 'prompt'
+                  ? 'prompt history entry'
+                  : deleteDialog.kind === 'response'
+                    ? 'post-study response'
+                    : 'user account'
+              }.
+            </p>
+            {deleteError ? (
+              <p className="mt-2 text-sm text-red-700" role="alert">{deleteError}</p>
+            ) : null}
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                onClick={() => {
+                  if (!isDeleting) {
+                    setDeleteDialog(null);
+                    setDeleteError(null);
+                  }
+                }}
+                disabled={isDeleting}
+                className="px-3 py-2 rounded-md border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className="px-3 py-2 rounded-md bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-60"
+              >
+                {isDeleting ? 'Deleting...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+};
+
+export default AdminPage;

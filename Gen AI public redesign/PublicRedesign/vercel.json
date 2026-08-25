@@ -1,0 +1,39 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/bfl/:path*",
+      "destination": "/api/bfl/:path*"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "http://130.225.39.20:5000/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store, max-age=0"
+        },
+        {
+          "key": "CDN-Cache-Control",
+          "value": "no-store"
+        },
+        {
+          "key": "Vercel-CDN-Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    }
+  ]
+}
