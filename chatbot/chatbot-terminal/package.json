@@ -1,0 +1,14 @@
+{
+  "name": "chatbot-terminal",
+  "version": "1.0.0",
+  "description": "A simple terminal chatbot powered by the Claude API",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.0",
+    "dotenv": "^16.4.5"
+  }
+}
