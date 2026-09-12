@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 # Reads the .env file and loads ANTHROPIC_API_KEY
 load_dotenv()
 # Reads the key from the environment, not from the code.
-# If the key is not found, returns None — we check for that.
+# If the key is not found, returns None 
 api_key = os.getenv("ANTHROPIC_API_KEY")
 if not api_key:
     raise ValueError("ANTHROPIC_API_KEY not found in .env file")

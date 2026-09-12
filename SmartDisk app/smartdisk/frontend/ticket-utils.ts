@@ -19,6 +19,11 @@ const URGENCY_LEVELS = ["LOW", "MEDIUM", "HIGH"];
 // One number, defined once, used everywhere.
 const MAX_SUBJECT_LENGTH = 100;
 
+// Format check only — confirms the string looks like an email
+// (something@something.tld), not that the address actually exists.
+// Used by both LoginPage and TicketForm so the rule stays in one place.
+const isValidEmail = (email: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
 // ── SAMPLE DATA — array of ticket objects ───────────────────
  
 // WHY an array of objects?
@@ -184,7 +189,7 @@ console.log(getTicketStats(tickets));
 
 const fetchTickets = async (token: string) : Promise<Ticket[]>  => {
   try {
-    const response = await fetch("http://localhost:5056/api/tickets", {
+    const response = await fetch(`${API_URL}/api/tickets`, {
   headers: { "Authorization": `Bearer ${token}` }
 });
     
@@ -206,10 +211,11 @@ const fetchTickets = async (token: string) : Promise<Ticket[]>  => {
 // Clicking a ticket on the dashboard opens the detail view.
 // We only need ONE ticket — not all of them.
 // The .NET backend has a GET /api/tickets/:id endpoint for this.
-const fetchTicketById = async (ticketId: number) => {
+const fetchTicketById = async (ticketId: number, token: string) => {
   try {
-    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5056";
-    const response = await fetch(`${API_URL}/api/tickets/${ticketId}`);
+    const response = await fetch(`${API_URL}/api/tickets/${ticketId}`, {
+      headers: { "Authorization": `Bearer ${token}` },
+    });
 
     if (!response.ok) {
       throw new Error("Ticket not found: " + ticketId);
@@ -231,19 +237,21 @@ const fetchTicketById = async (ticketId: number) => {
 // The customer portal form calls this when submitted.
 // It sends the ticket data to the .NET backend.
 // The backend saves it to PostgreSQL and returns the saved ticket with a database ID.
-const submitTicket = async (customerName: string, email: string, subject: string)=>{
+const submitTicket = async (customerName: string, email: string, subject: string, token: string)=>{
   try{
 
     const ticketData = createTicket (customerName,email,subject);
-    const response = await fetch ("http://localhost:5056/api/tickets",{
-       
+    const response = await fetch (`${API_URL}/api/tickets`,{
+
       // Default fetch method is GET. Must explicitly set POST.
       method:"POST",
-     
+
       //  Content-Type header: Tells the server- the body is JSON, not a form or plain text.
       // Without this header, the .NET backend cannot read the body.
+      // Authorization: TicketsController is [Authorize] — every endpoint needs the JWT.
       headers:{
         "Content-Type":"application/json",
+        "Authorization": `Bearer ${token}`,
       },
       // fetch() cannot send a JavaScript object directly over the network.
       // JSON.stringify converts { id: 1, customer: "Farika" }
@@ -273,12 +281,13 @@ const submitTicket = async (customerName: string, email: string, subject: string
 // PATCH updates part of an existing record — just the status field.
 // PUT would replace the whole ticket. PATCH only touches what changed.
 
-const updateTicketStatus = async (ticketId: number, newStatus: string)=>{
+const updateTicketStatus = async (ticketId: number, newStatus: string, token: string)=>{
   try{
-    const response= await fetch (`http://localhost:5056/api/tickets/${ticketId}`, {
+    const response= await fetch (`${API_URL}/api/tickets/${ticketId}`, {
     method :"PATCH",
      headers:{
         "Content-Type":"application/json",
+        "Authorization": `Bearer ${token}`,
       },
       body:JSON.stringify({status:newStatus}),
   });
@@ -382,5 +391,5 @@ class TicketQueue{
 export { tickets, createTicket, getOpenTickets, getTicketStats,
          formatAllTickets, getTicketsByUrgency,
          sortByUrgency, sortByDate, sortByStatus,
-         searchTickets, TicketQueue,
+         searchTickets, TicketQueue, isValidEmail,
          fetchTickets, submitTicket, updateTicketStatus };

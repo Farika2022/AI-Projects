@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { isValidEmail } from "../../ticket-utils";
 
 interface LoginPageProps {
   onLogin: (token: string) => void;
@@ -11,8 +12,12 @@ function LoginPage({ onLogin }: LoginPageProps) {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    setLoading(true);
     setError("");
+    if (!isValidEmail(email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+    setLoading(true);
     try {
       const response = await fetch("http://localhost:5056/api/auth/login", {
         method: "POST",

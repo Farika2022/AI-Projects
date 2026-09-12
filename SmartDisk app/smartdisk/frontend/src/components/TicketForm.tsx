@@ -1,5 +1,5 @@
 import { useState , useEffect} from "react";
-import {createTicket} from "../../ticket-utils"
+import {createTicket, isValidEmail} from "../../ticket-utils"
 import type { Ticket } from "../types/ticket";
 
 // The parent (App.jsx) knows — it adds it to the tickets list.
@@ -33,7 +33,7 @@ function TicketForm ({onSubmit}: TicketFormProps){
             setError ("Please fill in all fields");
             return;
         }
-        if (!email.includes("@")){
+        if (!isValidEmail(email)){
             setError ("Please enter a valid email address");
             return;
         }

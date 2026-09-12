@@ -33,11 +33,12 @@ const [apiError, setApiError] = useState<string>("");
   // visible recalculates automatically — no manual DOM updates needed.
 
   useEffect(() => {
+  if (!token) return; // not logged in yet — nothing to fetch
 
   const loadTickets = async () => {
   try {
     setLoading(true);
-    const data = await fetchTickets(token); // pass token here
+    const data = await fetchTickets(token);
     setTickets(data);
   } catch (error) {
     setApiError("Could not connect to server.");
@@ -47,7 +48,7 @@ const [apiError, setApiError] = useState<string>("");
 };
 
   loadTickets();
-}, []); // [] = run once when component first appears
+}, [token]); // re-run once the user logs in and token is set
 
 
 // Sorting
@@ -77,7 +78,8 @@ const visible = getSorted(
     const saved = await submitTicket(
       newTicket.customer,
       newTicket.email,
-      newTicket.subject
+      newTicket.subject,
+      token
     );
 
     if (saved) {
@@ -95,6 +97,7 @@ const visible = getSorted(
 
   
   // Add ticket to AI triage queue
+  {/*
   const addToQueue = (ticket:Ticket)=>{
     triageQueue.current.enqueue(ticket);
     setQueueSize(triageQueue.current.size);
@@ -107,10 +110,11 @@ const visible = getSorted(
       setQueueSize(triageQueue.current.size)
     }
   };
+*/}
+  if (!token) {
+    return <LoginPage onLogin={handleLogin} />;
+  }
 
-  //if (!token) {
-  //return <LoginPage onLogin={handleLogin} />;
-//}
   return (
     
     <div style={{ maxWidth: "640px", margin: "0 auto", padding: "20px", fontFamily: "sans-serif" }}>
@@ -223,7 +227,10 @@ const visible = getSorted(
 
     {/*Ticket list- passes filtered tickets down as props*/}
     <TicketList tickets={visible}/>
+    
+   
     {/* AI Triage Queue */}
+    {/*
     <div
     style ={{marginTop:"24px", background:"#f8fafc", border:" 1px solid #e2e8f0", borderRadius:"12px", padding:"16px"}}>
     <h3 style={{fontSize:"15px", fontWeight:"600", marginBottom:"12px",color:"#1d44d8"}}>
@@ -262,6 +269,8 @@ const visible = getSorted(
       )}
     </div>
     </div>
+    
+     */}
     </>
     )}
    </div>
