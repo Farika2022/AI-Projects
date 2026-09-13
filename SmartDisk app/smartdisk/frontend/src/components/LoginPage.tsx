@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { isValidEmail } from "../../ticket-utils";
+import { isValidEmail, API_URL } from "../../ticket-utils";
 
 interface LoginPageProps {
   onLogin: (token: string) => void;
@@ -19,7 +19,7 @@ function LoginPage({ onLogin }: LoginPageProps) {
     }
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:5056/api/auth/login", {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

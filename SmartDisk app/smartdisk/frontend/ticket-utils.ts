@@ -391,5 +391,5 @@ class TicketQueue{
 export { tickets, createTicket, getOpenTickets, getTicketStats,
          formatAllTickets, getTicketsByUrgency,
          sortByUrgency, sortByDate, sortByStatus,
-         searchTickets, TicketQueue, isValidEmail,
+         searchTickets, TicketQueue, isValidEmail, API_URL,
          fetchTickets, submitTicket, updateTicketStatus };
