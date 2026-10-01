@@ -207,6 +207,32 @@ const fetchTickets = async (token: string) : Promise<Ticket[]>  => {
 
 }
 
+// login()
+// Shared by LoginPage (manual form) and App's auto-login on mount —
+// one place for the fetch/parse logic instead of duplicating it.
+// Throws AuthError on bad credentials (not worth retrying) so callers
+// can tell that apart from a network failure (worth retrying).
+class AuthError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
+const login = async (email: string, password: string): Promise<string> => {
+  const response = await fetch(`${API_URL}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!response.ok) {
+    throw new AuthError("Invalid email or password", response.status);
+  }
+  const data = await response.json();
+  return data.token;
+};
+
 // fetchTicketsById()
 // Clicking a ticket on the dashboard opens the detail view.
 // We only need ONE ticket — not all of them.
@@ -392,4 +418,5 @@ export { tickets, createTicket, getOpenTickets, getTicketStats,
          formatAllTickets, getTicketsByUrgency,
          sortByUrgency, sortByDate, sortByStatus,
          searchTickets, TicketQueue, isValidEmail, API_URL,
+         login, AuthError,
          fetchTickets, submitTicket, updateTicketStatus };

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { isValidEmail, API_URL } from "../../ticket-utils";
+import { isValidEmail, login, AuthError } from "../../ticket-utils";
 
 interface LoginPageProps {
   onLogin: (token: string) => void;
@@ -19,22 +19,10 @@ function LoginPage({ onLogin }: LoginPageProps) {
     }
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        setError("Invalid email or password");
-        return;
-      }
-
-      const data = await response.json();
-      onLogin(data.token);
-
-    } catch {
-      setError("Could not connect to server");
+      const token = await login(email, password);
+      onLogin(token);
+    } catch (error) {
+      setError(error instanceof AuthError ? "Invalid email or password" : "Could not connect to server");
     } finally {
       setLoading(false);
     }

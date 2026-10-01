@@ -4,10 +4,16 @@ import TicketForm from './components/TicketForm'
 import {
   getTicketStats, fetchTickets, submitTicket,
   sortByUrgency, sortByDate, sortByStatus,
-  searchTickets, TicketQueue
+  searchTickets, TicketQueue, login, AuthError
 } from "../ticket-utils";
 import type { Ticket } from "./types/ticket";
 import LoginPage from "./components/LoginPage";
+
+// Public demo account — intentional. This is a portfolio deployment with no
+// real user data, so the site auto-logs itself in instead of showing a form.
+// Visit with ?login=1 to see the real manual login flow.
+const DEMO_EMAIL = "staff@smartdesk.com";
+const DEMO_PASSWORD = "password123";
 
 // useState triggers a re-render every time it changes.
 // useRef holds a value between renders WITHOUT causing re-renders.
@@ -15,6 +21,7 @@ function App() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
 const [loading, setLoading] = useState<boolean>(true);
 const [token, setToken] = useState<string>("");
+const [authStatus, setAuthStatus] = useState<"pending" | "ready" | "failed">("pending");
 const [apiError, setApiError] = useState<string>("");
   const [filter,setFilter] = useState ("ALL");
   const [view, setView] = useState("dashboard");
@@ -26,8 +33,46 @@ const [apiError, setApiError] = useState<string>("");
   
   const handleLogin = (newToken: string) => {
   setToken(newToken);
+  setAuthStatus("ready");
 };
 
+  // Auto-login with the demo account on mount — no form shown unless it
+  // fails, or ?login=1 is in the URL (manual escape hatch).
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("login") === "1") {
+      setAuthStatus("failed");
+      return;
+    }
+
+    let cancelled = false;
+    const RETRY_DELAY_MS = 5000;
+    const MAX_ATTEMPTS = 10; // ~50s — covers a Render free-tier cold start
+
+    const attemptLogin = async (attempt: number) => {
+      try {
+        const newToken = await login(DEMO_EMAIL, DEMO_PASSWORD);
+        if (cancelled) return;
+        setToken(newToken);
+        setAuthStatus("ready");
+      } catch (error) {
+        if (cancelled) return;
+        // Bad credentials won't fix themselves on retry — give up immediately.
+        if (error instanceof AuthError) {
+          setAuthStatus("failed");
+          return;
+        }
+        // Likely a cold-start backend still waking up — retry for a while.
+        if (attempt < MAX_ATTEMPTS) {
+          setTimeout(() => attemptLogin(attempt + 1), RETRY_DELAY_MS);
+        } else {
+          setAuthStatus("failed");
+        }
+      }
+    };
+
+    attemptLogin(1);
+    return () => { cancelled = true; };
+  }, []);
 
   // Every time filter changes, React re-renders App.
   // visible recalculates automatically — no manual DOM updates needed.
@@ -111,7 +156,16 @@ const visible = getSorted(
     }
   };
 */}
-  if (!token) {
+  if (authStatus === "pending") {
+    return (
+      <div style={{ maxWidth: "640px", margin: "100px auto", padding: "20px",
+        fontFamily: "sans-serif", textAlign: "center", color: "#6b7280" }}>
+        Loading SmartDesk…
+      </div>
+    );
+  }
+
+  if (authStatus === "failed" || !token) {
     return <LoginPage onLogin={handleLogin} />;
   }
 
