@@ -2,8 +2,16 @@ import { Suspense } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Stars } from '@react-three/drei'
 import Globe from './Globe'
+import Marker from './Marker'
+import locationsData from '../data/locations.json'
+import type { Location } from '../types'
 
 const GLOBE_RADIUS = 2
+const locations: Location[] = locationsData
+
+function handleMarkerClick(location: Location) {
+  console.log(location.name)
+}
 
 export default function Scene() {
   return (
@@ -14,7 +22,18 @@ export default function Scene() {
       <Stars radius={100} depth={50} count={5000} factor={4} fade speed={0.5} />
 
       <Suspense fallback={null}>
-        <Globe radius={GLOBE_RADIUS} />
+        {/* Markers share a group with the globe so they always move with it */}
+        <group>
+          <Globe radius={GLOBE_RADIUS} />
+          {locations.map((location) => (
+            <Marker
+              key={location.id}
+              location={location}
+              globeRadius={GLOBE_RADIUS}
+              onClick={handleMarkerClick}
+            />
+          ))}
+        </group>
       </Suspense>
 
       <OrbitControls

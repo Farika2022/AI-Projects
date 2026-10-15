@@ -1,0 +1,12 @@
+[
+  { "id": "eiffel-tower", "name": "Eiffel Tower", "country": "France", "lat": 48.8584, "lng": 2.2945, "wikiTitle": "Eiffel_Tower" },
+  { "id": "statue-of-liberty", "name": "Statue of Liberty", "country": "United States", "lat": 40.6892, "lng": -74.0445, "wikiTitle": "Statue_of_Liberty" },
+  { "id": "christ-the-redeemer", "name": "Christ the Redeemer", "country": "Brazil", "lat": -22.9519, "lng": -43.2105, "wikiTitle": "Christ_the_Redeemer_(statue)" },
+  { "id": "machu-picchu", "name": "Machu Picchu", "country": "Peru", "lat": -13.1631, "lng": -72.545, "wikiTitle": "Machu_Picchu" },
+  { "id": "great-pyramid-of-giza", "name": "Great Pyramid of Giza", "country": "Egypt", "lat": 29.9792, "lng": 31.1342, "wikiTitle": "Great_Pyramid_of_Giza" },
+  { "id": "table-mountain", "name": "Table Mountain", "country": "South Africa", "lat": -33.9628, "lng": 18.4098, "wikiTitle": "Table_Mountain" },
+  { "id": "taj-mahal", "name": "Taj Mahal", "country": "India", "lat": 27.1751, "lng": 78.0421, "wikiTitle": "Taj_Mahal" },
+  { "id": "great-wall-of-china", "name": "Great Wall of China", "country": "China", "lat": 40.4319, "lng": 116.5704, "wikiTitle": "Great_Wall_of_China" },
+  { "id": "mount-fuji", "name": "Mount Fuji", "country": "Japan", "lat": 35.3606, "lng": 138.7274, "wikiTitle": "Mount_Fuji" },
+  { "id": "sydney-opera-house", "name": "Sydney Opera House", "country": "Australia", "lat": -33.8568, "lng": 151.2153, "wikiTitle": "Sydney_Opera_House" }
+]
