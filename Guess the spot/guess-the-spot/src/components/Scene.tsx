@@ -3,17 +3,20 @@ import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Stars } from '@react-three/drei'
 import Globe from './Globe'
 import Marker from './Marker'
-import locationsData from '../data/locations.json'
+import { locations } from '../data/locations'
 import type { Location } from '../types'
 
 const GLOBE_RADIUS = 2
-const locations: Location[] = locationsData
 
-function handleMarkerClick(location: Location) {
-  console.log(location.name)
+type SceneProps = {
+  answeredIds: string[]
+  paused: boolean
+  /** Markers ignore clicks (e.g. before the game starts or after it ends). */
+  disabled: boolean
+  onSelectLocation: (location: Location) => void
 }
 
-export default function Scene() {
+export default function Scene({ answeredIds, paused, disabled, onSelectLocation }: SceneProps) {
   return (
     <Canvas className="h-full w-full" camera={{ position: [0, 0, 6], fov: 45 }}>
       <ambientLight intensity={0.6} />
@@ -30,14 +33,16 @@ export default function Scene() {
               key={location.id}
               location={location}
               globeRadius={GLOBE_RADIUS}
-              onClick={handleMarkerClick}
+              answered={answeredIds.includes(location.id)}
+              disabled={disabled}
+              onClick={onSelectLocation}
             />
           ))}
         </group>
       </Suspense>
 
       <OrbitControls
-        autoRotate
+        autoRotate={!paused}
         autoRotateSpeed={0.4}
         enablePan={false}
         enableDamping

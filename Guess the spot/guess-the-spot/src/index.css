@@ -7,3 +7,73 @@ html, body, #root {
   height: 100%;
   background: #05070f;
 }
+
+/* ---- Results screen celebration ---- */
+
+/* Results card springs in. */
+.celebrate-card {
+  animation: celebrate-card 0.45s ease-out;
+}
+
+/* Each emoji wanders slowly around its spot... */
+.celebrate-drift {
+  animation: celebrate-drift 7s ease-in-out infinite;
+}
+
+/* ...pops in once with a spin... */
+.celebrate-pop {
+  animation: celebrate-pop 0.6s ease-out both;
+}
+
+/* ...then keeps jumping, wiggling and swelling. */
+.celebrate-party {
+  display: inline-block;
+  animation: celebrate-party 1.6s ease-in-out infinite;
+}
+
+.confetti-fall {
+  animation: confetti-fall 5s linear infinite;
+}
+
+.confetti-flutter {
+  animation: confetti-flutter 2s ease-in-out infinite;
+}
+
+@keyframes celebrate-card {
+  0% { transform: scale(0.7); opacity: 0; }
+  70% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+@keyframes celebrate-drift {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(40px, -30px); }
+  50% { transform: translate(-25px, -55px); }
+  75% { transform: translate(-40px, 15px); }
+}
+
+@keyframes celebrate-pop {
+  0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+  60% { transform: scale(1.4) rotate(15deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+@keyframes celebrate-party {
+  0%, 100% { transform: translate(0, 0) rotate(0) scale(1); }
+  15% { transform: translate(6px, -40px) rotate(-25deg) scale(1.35); }
+  30% { transform: translate(0, 0) rotate(15deg) scale(0.9, 1.1); }
+  45% { transform: translate(-6px, -22px) rotate(-12deg) scale(1.2); }
+  60% { transform: translate(0, 0) rotate(8deg) scale(1.05, 0.95); }
+  75% { transform: translate(0, -8px) rotate(-4deg) scale(1.1); }
+}
+
+@keyframes confetti-fall {
+  0% { transform: translateY(-10vh); }
+  100% { transform: translateY(110vh); }
+}
+
+@keyframes confetti-flutter {
+  0% { transform: translateX(0) rotate(0) rotateY(0); }
+  50% { transform: translateX(24px) rotate(180deg) rotateY(180deg); }
+  100% { transform: translateX(0) rotate(360deg) rotateY(360deg); }
+}

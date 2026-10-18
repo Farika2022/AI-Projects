@@ -1,12 +1,262 @@
 [
-  { "id": "eiffel-tower", "name": "Eiffel Tower", "country": "France", "lat": 48.8584, "lng": 2.2945, "wikiTitle": "Eiffel_Tower" },
-  { "id": "statue-of-liberty", "name": "Statue of Liberty", "country": "United States", "lat": 40.6892, "lng": -74.0445, "wikiTitle": "Statue_of_Liberty" },
-  { "id": "christ-the-redeemer", "name": "Christ the Redeemer", "country": "Brazil", "lat": -22.9519, "lng": -43.2105, "wikiTitle": "Christ_the_Redeemer_(statue)" },
-  { "id": "machu-picchu", "name": "Machu Picchu", "country": "Peru", "lat": -13.1631, "lng": -72.545, "wikiTitle": "Machu_Picchu" },
-  { "id": "great-pyramid-of-giza", "name": "Great Pyramid of Giza", "country": "Egypt", "lat": 29.9792, "lng": 31.1342, "wikiTitle": "Great_Pyramid_of_Giza" },
-  { "id": "table-mountain", "name": "Table Mountain", "country": "South Africa", "lat": -33.9628, "lng": 18.4098, "wikiTitle": "Table_Mountain" },
-  { "id": "taj-mahal", "name": "Taj Mahal", "country": "India", "lat": 27.1751, "lng": 78.0421, "wikiTitle": "Taj_Mahal" },
-  { "id": "great-wall-of-china", "name": "Great Wall of China", "country": "China", "lat": 40.4319, "lng": 116.5704, "wikiTitle": "Great_Wall_of_China" },
-  { "id": "mount-fuji", "name": "Mount Fuji", "country": "Japan", "lat": 35.3606, "lng": 138.7274, "wikiTitle": "Mount_Fuji" },
-  { "id": "sydney-opera-house", "name": "Sydney Opera House", "country": "Australia", "lat": -33.8568, "lng": 151.2153, "wikiTitle": "Sydney_Opera_House" }
+  {
+    "id": "eiffel-tower", "name": "Eiffel Tower", "country": "France", "lat": 48.8584, "lng": 2.2945, "wikiTitle": "Eiffel_Tower",
+    "facts": [
+      "It grows up to 15 cm taller in summer, because its iron expands in the heat.",
+      "It's repainted by hand about every 7 years, using around 60 tonnes of paint.",
+      "It was built for the 1889 World's Fair and was only meant to stand for 20 years."
+    ],
+    "questions": [
+      { "question": "This iron tower was built for a World's Fair. In which year was it finished?", "answer": "1889", "wrong": ["1789", "1851", "1925"] },
+      { "question": "Roughly how tall is this tower, including its antennas?", "answer": "About 330 m", "wrong": ["About 120 m", "About 541 m", "About 828 m"] },
+      { "question": "What is this tower mainly built from?", "answer": "Wrought iron", "wrong": ["Reinforced concrete", "Stone", "Aluminium"] }
+    ]
+  },
+  {
+    "id": "statue-of-liberty", "name": "Statue of Liberty", "country": "United States", "lat": 40.6892, "lng": -74.0445, "wikiTitle": "Statue_of_Liberty",
+    "facts": [
+      "It was a gift from France, and it turned green as its copper skin slowly oxidised.",
+      "Its inner iron framework was designed by Gustave Eiffel, the engineer behind the Eiffel Tower.",
+      "The seven rays on her crown are said to stand for the seven seas and seven continents."
+    ],
+    "questions": [
+      { "question": "What is this statue holding up in her right hand?", "answer": "A torch", "wrong": ["A sword", "A book", "A flag"] },
+      { "question": "Why is this statue green?", "answer": "Its copper skin oxidised", "wrong": ["It was painted green", "It's carved from jade", "Moss grows on it"] },
+      { "question": "Which country gave this statue as a gift?", "answer": "France", "wrong": ["United Kingdom", "Spain", "Italy"] }
+    ]
+  },
+  {
+    "id": "christ-the-redeemer", "name": "Christ the Redeemer", "country": "Brazil", "lat": -22.9519, "lng": -43.2105, "wikiTitle": "Christ_the_Redeemer_(statue)",
+    "facts": [
+      "Standing on top of Corcovado mountain, the statue gets struck by lightning several times a year.",
+      "The statue was completed in 1931 after nine years of construction.",
+      "Its outer layer is a mosaic of thousands of small triangular soapstone tiles."
+    ],
+    "questions": [
+      { "question": "Roughly how tall is this statue, not counting its pedestal?", "answer": "About 30 m", "wrong": ["About 10 m", "About 60 m", "About 93 m"] },
+      { "question": "What is this statue's outer layer made of?", "answer": "Soapstone tiles", "wrong": ["Gold leaf", "Painted bronze", "White marble"] },
+      { "question": "This statue looks out over which city?", "answer": "Rio de Janeiro", "wrong": ["São Paulo", "Buenos Aires", "Lima"] }
+    ]
+  },
+  {
+    "id": "machu-picchu", "name": "Machu Picchu", "country": "Peru", "lat": -13.1631, "lng": -72.545, "wikiTitle": "Machu_Picchu",
+    "facts": [
+      "The Inca built its walls without mortar, cutting stones so precisely they lock together.",
+      "It was built in the 15th century, probably as an estate for the Inca emperor Pachacuti.",
+      "It sits about 2,430 metres above sea level, on a ridge high in the Andes."
+    ],
+    "questions": [
+      { "question": "Which civilisation built this mountain citadel?", "answer": "The Inca", "wrong": ["The Maya", "The Aztecs", "The Romans"] },
+      { "question": "Roughly how high above sea level is this site?", "answer": "About 2,430 m", "wrong": ["About 450 m", "About 1,000 m", "About 5,200 m"] },
+      { "question": "In which century was this citadel built?", "answer": "15th century", "wrong": ["5th century", "10th century", "18th century"] }
+    ]
+  },
+  {
+    "id": "great-pyramid-of-giza", "name": "Great Pyramid of Giza", "country": "Egypt", "lat": 29.9792, "lng": 31.1342, "wikiTitle": "Great_Pyramid_of_Giza",
+    "facts": [
+      "It was the tallest human-made structure on Earth for about 3,800 years.",
+      "It was built around 4,500 years ago as a tomb for the pharaoh Khufu.",
+      "It's made of an estimated 2.3 million stone blocks."
+    ],
+    "questions": [
+      { "question": "This pyramid was built as a tomb for which pharaoh?", "answer": "Khufu", "wrong": ["Tutankhamun", "Ramesses II", "Cleopatra"] },
+      { "question": "Roughly how many stone blocks were used to build it?", "answer": "2.3 million", "wrong": ["23,000", "230,000", "23 million"] },
+      { "question": "About how old is this pyramid?", "answer": "About 4,500 years", "wrong": ["About 1,000 years", "About 2,000 years", "About 10,000 years"] }
+    ]
+  },
+  {
+    "id": "table-mountain", "name": "Table Mountain", "country": "South Africa", "lat": -33.9628, "lng": 18.4098, "wikiTitle": "Table_Mountain",
+    "facts": [
+      "The cloud that often drapes over its flat top is nicknamed the \"tablecloth\".",
+      "Its flat top stretches about 3 km from side to side.",
+      "Its cable car has a rotating floor, giving riders a full 360° view on the way up."
+    ],
+    "questions": [
+      { "question": "What do locals call the cloud that often covers this mountain's flat top?", "answer": "The tablecloth", "wrong": ["The blanket", "The pillow", "The hat"] },
+      { "question": "Which city lies at the foot of this mountain?", "answer": "Cape Town", "wrong": ["Johannesburg", "Nairobi", "Durban"] },
+      { "question": "Roughly how high is this mountain's summit?", "answer": "About 1,085 m", "wrong": ["About 350 m", "About 3,500 m", "About 8,800 m"] }
+    ]
+  },
+  {
+    "id": "taj-mahal", "name": "Taj Mahal", "country": "India", "lat": 27.1751, "lng": 78.0421, "wikiTitle": "Taj_Mahal",
+    "facts": [
+      "Its white marble seems to change colour: pinkish at dawn, white at noon and golden in moonlight.",
+      "Emperor Shah Jahan built it in memory of his wife, Mumtaz Mahal.",
+      "Around 20,000 workers helped build it, along with about 1,000 elephants to carry materials."
+    ],
+    "questions": [
+      { "question": "This mausoleum was built in memory of whom?", "answer": "The emperor's wife", "wrong": ["A famous general", "The emperor's mother", "A royal poet"] },
+      { "question": "What is the main building made of?", "answer": "White marble", "wrong": ["Limestone", "Red sandstone", "Granite"] },
+      { "question": "This monument stands on the bank of which river?", "answer": "Yamuna", "wrong": ["Ganges", "Indus", "Nile"] }
+    ]
+  },
+  {
+    "id": "great-wall-of-china", "name": "Great Wall of China", "country": "China", "lat": 40.4319, "lng": 116.5704, "wikiTitle": "Great_Wall_of_China",
+    "facts": [
+      "Despite the popular myth, it can't be seen from space with the naked eye.",
+      "Counting all its branches, it stretches about 21,000 km.",
+      "Builders mixed sticky rice into the mortar of some sections to make it stronger."
+    ],
+    "questions": [
+      { "question": "Counting all its branches, roughly how long is this wall?", "answer": "About 21,000 km", "wrong": ["About 500 km", "About 2,100 km", "About 100,000 km"] },
+      { "question": "Can this wall be seen from space with the naked eye?", "answer": "No, it's too narrow", "wrong": ["Yes, easily", "Only at night", "Only from the Moon"] },
+      { "question": "Which food was mixed into the mortar of some sections?", "answer": "Sticky rice", "wrong": ["Honey", "Eggs", "Wheat flour"] }
+    ]
+  },
+  {
+    "id": "mount-fuji", "name": "Mount Fuji", "country": "Japan", "lat": 35.3606, "lng": 138.7274, "wikiTitle": "Mount_Fuji",
+    "facts": [
+      "It's an active volcano. Its last eruption was in 1707.",
+      "At 3,776 metres, it's the highest mountain in its country.",
+      "Over 200,000 people climb it every year, mostly during the summer season."
+    ],
+    "questions": [
+      { "question": "How high is this mountain?", "answer": "3,776 m", "wrong": ["2,228 m", "4,810 m", "8,849 m"] },
+      { "question": "What kind of mountain is this?", "answer": "An active volcano", "wrong": ["An extinct volcano", "A coral island", "A glacier-carved peak"] },
+      { "question": "When did this mountain last erupt?", "answer": "1707", "wrong": ["1883", "1945", "It never has"] }
+    ]
+  },
+  {
+    "id": "sydney-opera-house", "name": "Sydney Opera House", "country": "Australia", "lat": -33.8568, "lng": 151.2153, "wikiTitle": "Sydney_Opera_House",
+    "facts": [
+      "Its famous sails are covered in more than one million tiles.",
+      "It was designed by Danish architect Jørn Utzon, who won a design competition in 1957.",
+      "It became a UNESCO World Heritage Site in 2007."
+    ],
+    "questions": [
+      { "question": "The 'sails' on this building's roof are covered in what?", "answer": "Over a million tiles", "wrong": ["Glass panels", "Copper sheets", "Painted canvas"] },
+      { "question": "The architect of this building came from which country?", "answer": "Denmark", "wrong": ["Australia", "United Kingdom", "Brazil"] },
+      { "question": "In which year did this building open?", "answer": "1973", "wrong": ["1923", "1951", "1999"] }
+    ]
+  },
+  {
+    "id": "colosseum", "name": "Colosseum", "country": "Italy", "lat": 41.8902, "lng": 12.4922, "wikiTitle": "Colosseum",
+    "facts": [
+      "It held around 50,000 spectators, who entered through 80 numbered arches.",
+      "It was completed in 80 AD under Emperor Titus.",
+      "Much of it was lost to earthquakes and to people reusing its stone for other buildings."
+    ],
+    "questions": [
+      { "question": "Roughly how many spectators could this arena hold?", "answer": "About 50,000", "wrong": ["About 1,000", "About 5,000", "About 200,000"] },
+      { "question": "What was this arena famous for hosting?", "answer": "Gladiator fights", "wrong": ["Chariot races", "The Olympic Games", "Opera"] },
+      { "question": "In which century was this arena completed?", "answer": "1st century AD", "wrong": ["5th century BC", "10th century AD", "15th century AD"] }
+    ]
+  },
+  {
+    "id": "sagrada-familia", "name": "Sagrada Família", "country": "Spain", "lat": 41.4036, "lng": 2.1744, "wikiTitle": "Sagrada_Família",
+    "facts": [
+      "Construction started in 1882, and the basilica still isn't finished.",
+      "Architect Antoni Gaudí devoted more than 40 years of his life to it.",
+      "Its columns branch out like trees, so the inside feels like a stone forest."
+    ],
+    "questions": [
+      { "question": "Which architect is famous for designing this basilica?", "answer": "Antoni Gaudí", "wrong": ["Le Corbusier", "Frank Lloyd Wright", "Christopher Wren"] },
+      { "question": "When did construction of this building begin?", "answer": "1882", "wrong": ["1492", "1750", "1960"] },
+      { "question": "What inspired the shape of the columns inside?", "answer": "Trees", "wrong": ["Ocean waves", "Mountains", "Seashells"] }
+    ]
+  },
+  {
+    "id": "chichen-itza", "name": "Chichen Itza", "country": "Mexico", "lat": 20.6843, "lng": -88.5678, "wikiTitle": "Chichen_Itza",
+    "facts": [
+      "Clap at the foot of the El Castillo pyramid and the echo sounds like a chirping bird.",
+      "At the spring and autumn equinoxes, shadows make a serpent appear to slither down its stairs.",
+      "Its four staircases plus the top platform add up to 365 steps, one for each day of the year."
+    ],
+    "questions": [
+      { "question": "Which civilisation built this pyramid?", "answer": "The Maya", "wrong": ["The Inca", "The Aztecs", "The Egyptians"] },
+      { "question": "Counting all four sides plus the top, how many steps does this pyramid have?", "answer": "365", "wrong": ["100", "500", "1,000"] },
+      { "question": "What appears on this pyramid's stairs at the equinoxes?", "answer": "A shadow serpent", "wrong": ["A rainbow", "A golden sun disc", "A jaguar's face"] }
+    ]
+  },
+  {
+    "id": "cn-tower", "name": "CN Tower", "country": "Canada", "lat": 43.6426, "lng": -79.3871, "wikiTitle": "CN_Tower",
+    "facts": [
+      "It has a glass floor 342 metres up that visitors can stand on.",
+      "It was the world's tallest free-standing structure for more than 30 years.",
+      "On the EdgeWalk, people walk hands-free around a ledge outside the tower, 356 metres up."
+    ],
+    "questions": [
+      { "question": "Roughly how tall is this tower?", "answer": "About 553 m", "wrong": ["About 300 m", "About 828 m", "About 1,000 m"] },
+      { "question": "What can visitors stand on 342 metres up?", "answer": "A glass floor", "wrong": ["A trampoline", "A swimming pool", "An ice rink"] },
+      { "question": "In which city does this tower stand?", "answer": "Toronto", "wrong": ["Vancouver", "Montreal", "Chicago"] }
+    ]
+  },
+  {
+    "id": "petra", "name": "Petra", "country": "Jordan", "lat": 30.3285, "lng": 35.4444, "wikiTitle": "Petra",
+    "facts": [
+      "This city was carved straight into rose-red sandstone cliffs over 2,000 years ago.",
+      "It was built by the Nabataeans, who grew rich from the incense trade.",
+      "Its famous Treasury appeared in the film Indiana Jones and the Last Crusade."
+    ],
+    "questions": [
+      { "question": "Which ancient people carved this city?", "answer": "The Nabataeans", "wrong": ["The Romans", "The Egyptians", "The Persians"] },
+      { "question": "Because of its stone, this place is nicknamed the '___ City'.", "answer": "Rose", "wrong": ["Golden", "White", "Blue"] },
+      { "question": "This site appeared in which famous adventure film?", "answer": "Indiana Jones and the Last Crusade", "wrong": ["Jurassic Park", "Star Wars", "Titanic"] }
+    ]
+  },
+  {
+    "id": "angkor-wat", "name": "Angkor Wat", "country": "Cambodia", "lat": 13.4125, "lng": 103.867, "wikiTitle": "Angkor_Wat",
+    "facts": [
+      "It's the largest religious monument in the world and appears on Cambodia's national flag.",
+      "It was built in the 12th century as a Hindu temple and later became a Buddhist one.",
+      "A moat about 190 metres wide surrounds the whole temple complex."
+    ],
+    "questions": [
+      { "question": "This temple was originally dedicated to which Hindu god?", "answer": "Vishnu", "wrong": ["Shiva", "Brahma", "Ganesha"] },
+      { "question": "In which century was this temple built?", "answer": "12th century", "wrong": ["2nd century", "7th century", "17th century"] },
+      { "question": "What surrounds this temple complex?", "answer": "A wide moat", "wrong": ["A desert", "A volcano crater", "A glacier"] }
+    ]
+  },
+  {
+    "id": "big-ben", "name": "Big Ben", "country": "United Kingdom", "lat": 51.5007, "lng": -0.1246, "wikiTitle": "Big_Ben",
+    "facts": [
+      "\"Big Ben\" is really the name of the giant bell inside. The tower is called the Elizabeth Tower.",
+      "The tower was renamed in 2012 to mark Queen Elizabeth II's Diamond Jubilee.",
+      "Each of its clock faces has a minute hand about 4.2 metres long."
+    ],
+    "questions": [
+      { "question": "This clock tower's famous nickname really belongs to what?", "answer": "The great bell inside", "wrong": ["The clock face", "The whole palace", "The architect"] },
+      { "question": "What is this tower's official name?", "answer": "Elizabeth Tower", "wrong": ["Victoria Tower", "Westminster Tower", "Royal Clock Tower"] },
+      { "question": "Which famous building is this tower part of?", "answer": "Palace of Westminster", "wrong": ["Buckingham Palace", "Tower of London", "Windsor Castle"] }
+    ]
+  },
+  {
+    "id": "acropolis-of-athens", "name": "Acropolis of Athens", "country": "Greece", "lat": 37.9715, "lng": 23.7257, "wikiTitle": "Acropolis_of_Athens",
+    "facts": [
+      "The Parthenon's columns lean slightly inward, which makes the temple look perfectly straight.",
+      "The Parthenon was dedicated to Athena, goddess of wisdom.",
+      "The Parthenon was built in the 5th century BC, almost 2,500 years ago."
+    ],
+    "questions": [
+      { "question": "The main temple here was dedicated to which goddess?", "answer": "Athena", "wrong": ["Aphrodite", "Hera", "Artemis"] },
+      { "question": "When was the main temple here built?", "answer": "5th century BC", "wrong": ["10th century BC", "1st century BC", "3rd century AD"] },
+      { "question": "What is the main temple here mostly built from?", "answer": "Marble", "wrong": ["Limestone", "Granite", "Brick"] }
+    ]
+  },
+  {
+    "id": "mount-kilimanjaro", "name": "Mount Kilimanjaro", "country": "Tanzania", "lat": -3.0674, "lng": 37.3556, "wikiTitle": "Mount_Kilimanjaro",
+    "facts": [
+      "It's Africa's highest peak and the tallest free-standing mountain in the world.",
+      "It's made of three volcanic cones: Kibo, Mawenzi and Shira.",
+      "Climbers pass through several climate zones, from rainforest at the bottom to icy summit."
+    ],
+    "questions": [
+      { "question": "How high is this mountain's summit?", "answer": "5,895 m", "wrong": ["3,776 m", "4,808 m", "8,849 m"] },
+      { "question": "What type of mountain is this?", "answer": "A dormant volcano", "wrong": ["A coral reef", "A fold mountain", "A meteor crater"] },
+      { "question": "This is the tallest mountain on which continent?", "answer": "Africa", "wrong": ["Asia", "South America", "Europe"] }
+    ]
+  },
+  {
+    "id": "burj-khalifa", "name": "Burj Khalifa", "country": "United Arab Emirates", "lat": 25.1972, "lng": 55.2744, "wikiTitle": "Burj_Khalifa",
+    "facts": [
+      "At 828 metres, it's the tallest building in the world.",
+      "Its shape was inspired by a desert flower called Hymenocallis.",
+      "It has more than 160 floors."
+    ],
+    "questions": [
+      { "question": "How tall is this building?", "answer": "828 m", "wrong": ["452 m", "553 m", "1,000 m"] },
+      { "question": "This building's design was inspired by what?", "answer": "A desert flower", "wrong": ["A camel", "A sailboat", "A palm tree"] },
+      { "question": "In which city does this building stand?", "answer": "Dubai", "wrong": ["Abu Dhabi", "Doha", "Riyadh"] }
+    ]
+  }
 ]
