@@ -4,7 +4,7 @@ A 3D geography game: spin the globe, click a landmark, and answer a question abo
 
 **Live demo:** [guesswith.vercel.app](https://guesswith.vercel.app)
 
-![Guess the Spot screenshot](docs/screenshot.png)
+
 
 ## Features
 
