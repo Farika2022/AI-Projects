@@ -36,7 +36,9 @@ function pickMediaListImage({ items }: WikiMediaList): string | null {
   const photos = items.filter((item) => item.type === 'image' && !isNotAPhoto(item.title) && item.srcset?.length)
   const photo = photos.find((item) => item.leadImage) ?? photos[0]
   const src = photo?.srcset?.at(-1)?.src
-  return src ? new URL(src, 'https:').href : null
+  if (!src) return null
+  // The API returns protocol-relative URLs like "//upload.wikimedia.org/...".
+  return src.startsWith('//') ? `https:${src}` : src
 }
 
 async function fetchJson<T>(url: string, signal: AbortSignal): Promise<T> {
