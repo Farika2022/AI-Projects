@@ -6,13 +6,14 @@ import FinishOverlay from './components/FinishOverlay'
 import Timer from './components/Timer'
 import { locations } from './data/locations'
 import { useGame } from './hooks/useGame'
-
+import { Analytics } from "@vercel/analytics/next"
 export default function App() {
   const game = useGame()
   const { phase, selected, outcome } = game
 
   return (
     <div className="h-full w-full">
+      <Analytics/>
       <Scene
         answeredIds={game.answeredIds}
         paused={selected !== null || phase === 'finished'}
