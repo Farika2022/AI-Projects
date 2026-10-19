@@ -1,3 +1,4 @@
+import { Analytics } from '@vercel/analytics/react'
 import Scene from './components/Scene'
 import ScoreCounter from './components/ScoreCounter'
 import QuestionModal from './components/QuestionModal'
@@ -80,6 +81,8 @@ export default function App() {
           onPlayAgain={game.playAgain}
         />
       )}
+
+      <Analytics />
     </div>
   )
 }
