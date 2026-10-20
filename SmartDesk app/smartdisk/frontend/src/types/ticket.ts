@@ -11,6 +11,8 @@ export interface Ticket {
   status: "open" | "resolved";        // only these two values allowed
   urgency: "LOW" | "MEDIUM" | "HIGH"; // only these three values allowed
   createdAt: string;
+  category?: string | null;       // set by the AI classifier
+  suggestedReply?: string | null; // set by the AI classifier
 }
 
 export interface TicketStats {

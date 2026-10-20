@@ -179,7 +179,10 @@ const visible = getSorted(
         <div style={{display:"flex",gap:"8px"}}>
           <button
             onClick={()=>setView("dashboard")}
-            style ={{padding:view ==="dashboard" ? "#1d4ed8":"white", color: view==="dashboard"?"white":"#374151",cursor:"pointer"}}
+            style={{padding:"6px 14px",borderRadius:"8px",border:"1px solid #d1d5db",
+              background:view === "dashboard" ? "#1d4ed8" :"white",
+              color:view ==="dashboard" ? "white" :"#374151", cursor:"pointer"
+            }}
           >
             Dashboard
           </button>
@@ -255,7 +258,7 @@ const visible = getSorted(
       onClick={()=>setSort(s)}
       style={{
         padding:"5px 12px",borderRadius:"20px",
-        border:"1px solod #ccc", fontSize:"12px",
+        border:"1px solid #ccc", fontSize:"12px",
         background:sort === s? "#1d4ed8":"white",
         cursor:"pointer"
       }}
@@ -275,12 +278,8 @@ const visible = getSorted(
   </div>
 )}
 
-{/* Only show list when not loading */}
+{/* Only show list when not loading — passes filtered tickets down as props */}
 {!loading && <TicketList tickets={visible} />}
-
-
-    {/*Ticket list- passes filtered tickets down as props*/}
-    <TicketList tickets={visible}/>
     
    
     {/* AI Triage Queue */}

@@ -16,9 +16,14 @@ return (
     [{ticket.urgency}]
    </span>
    <h3 style ={{margin:"4px 0"}}>{ticket.subject}</h3>
-   <p style={{color :"#666, fontSize:14px"}}>
-    {ticket.customer}. #{ticket.id}
+   <p style={{color:"#666", fontSize:"14px"}}>
+    {ticket.customer}. #{ticket.id}{ticket.category && <> · {ticket.category}</>}
    </p>
+   {ticket.suggestedReply && (
+    <p style={{fontSize:"13px", color:"#374151", background:"#f8fafc", padding:"8px", borderRadius:"6px", margin:"6px 0 0"}}>
+     <strong>Suggested reply:</strong> {ticket.suggestedReply}
+    </p>
+   )}
     </div>
 )
 }
