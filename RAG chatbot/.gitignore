@@ -1,0 +1,23 @@
+# Secrets
+.env
+.env.*
+
+# Keep example environment template
+!.env.example
+
+# Virtual environments
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# macOS
+.DS_Store
+
+# Generated vector indexes and uploaded documents
+faiss_index/
+*.faiss
+*.pkl
+uploads/
