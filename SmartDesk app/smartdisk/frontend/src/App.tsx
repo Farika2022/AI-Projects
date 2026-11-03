@@ -202,7 +202,7 @@ const visible = getSorted(
       <>
       {/* Stats row */}
    <div style = {{display: "flex", gap :"12px", marginBottom:"20px"}}>
-    {(["total", "high", "medium", "low"]as const).map(key => (
+    {(["total", "unclassified", "high", "medium", "low"]as const).map(key => (
        <div key={key} style={{ flex: 1, background: "#f1f5f9", padding: "12px", borderRadius: "8px", textAlign: "center" }}>
       <div style = {{fontSize:"22px", fontWeight: "bold"}}>{stats[key]}</div>
       <div style = {{fontSize:"12px", color: "#6b7280"}}>{key.toUpperCase()}</div>
@@ -235,8 +235,8 @@ const visible = getSorted(
     </div>
 
     {/* Filter buttons */}
-    <div style ={{display:"flex", gap :"8px", marginBottom:"16px"}}>
-      {["ALL", "HIGH", "MEDIUM", "LOW"]. map(f => (
+    <div style ={{display:"flex", gap :"8px", marginBottom:"16px", flexWrap:"wrap"}}>
+      {["ALL", "UNCLASSIFIED", "HIGH", "MEDIUM", "LOW"]. map(f => (
         <button
           key ={f}
           onClick={()=> setFilter(f)}
