@@ -17,6 +17,7 @@ Most projects are built with **Python** and **Streamlit** (a simple way to make 
 | 7 | [SmartDesk](#7-smartdesk) | Customer support desk where AI sorts tickets and writes replies | React, .NET, PostgreSQL, Groq |
 | 8 | [Guess the Spot](#8-guess-the-spot) | 3D globe geography quiz game | React, three.js, Tailwind |
 | 9 | [Gen AI Public Redesign](#9-gen-ai-public-redesign) | Thesis project: redesign public places by editing photos with AI | React, FLUX AI models, Vercel |
+| 10 | [Job Agent](#10-job-agent) | Checks how well your resume matches a job and helps you prepare | Groq, pypdf, Pydantic, Streamlit |
 
 ---
 
@@ -254,6 +255,43 @@ More details are in the project's own [README](Guess%20the%20spot/guess-the-spot
 **Tech stack:** React, TypeScript, Vite, Tailwind, Vercel, and a Node.js backend on an Ubuntu server.
 
 The full report (PDF) and setup steps are in the project's own [README](Gen%20AI%20public%20redesign/PublicRedesign/README.md).
+
+---
+## 10. Job Agent
+
+📁 `job_agent`
+
+**What it is:** Upload your resume (PDF) and paste a job description. The AI tells you **how well you match the job** 💼, what skills you are missing, and how to prepare.
+
+**Why it is useful:** Before applying, you can quickly see your strong points and gaps, and practice for the interview.
+
+**How it works:**
+1. 📄 Reads the text from your resume PDF.
+2. 🧑‍💼 The AI builds a short profile of you: summary, years of experience, skills, education and projects.
+3. 📋 The AI pulls the key requirements out of the job description: role title, required and preferred skills, experience needed and responsibilities.
+4. ⚖️ The AI compares the two and gives a **match score from 0 to 100%**. Required skills count more than preferred ones.
+5. ✅ Each AI answer is checked with **Pydantic** to make sure it has the right format.
+
+**What you get:**
+- 📊 A match score.
+- ✅ Skills you have that the job wants.
+- ❌ Important skills you are missing.
+- ⚠️ Skills (like communication) that your resume does not clearly show.
+- 💡 3 tips to close your gaps. The AI never suggests adding experience you don't have.
+- 🎤 5 interview questions for this job.
+
+**AI model:** `gpt-oss-20b` on Groq (you can change it with `GROQ_MODEL` in `.env`).
+
+**Run it:**
+1. Get a free API key from [Groq](https://console.groq.com).
+2. Create a `.env` file with `GROQ_API_KEY=your_key_here`.
+3. Then:
+```bash
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+More details are in the project's own [README](job_agent/README.md).
 
 ---
 
