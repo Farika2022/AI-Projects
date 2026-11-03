@@ -9,7 +9,7 @@ export interface Ticket {
   email: string;
   subject: string;
   status: "open" | "resolved";        // only these two values allowed
-  urgency: "LOW" | "MEDIUM" | "HIGH"; // only these three values allowed
+  urgency: "LOW" | "MEDIUM" | "HIGH" | "UNCLASSIFIED"; // UNCLASSIFIED = AI classification failed
   createdAt: string;
   category?: string | null;       // set by the AI classifier
   suggestedReply?: string | null; // set by the AI classifier
@@ -20,5 +20,6 @@ export interface TicketStats {
   high: number;
   medium: number;
   low: number;
+  unclassified: number;
   open: number;
 }
