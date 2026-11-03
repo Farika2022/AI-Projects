@@ -1,0 +1,84 @@
+# 💼 AI Job Search Agent
+
+An AI-powered **resume ↔ job description matcher** built with **Streamlit** and **Groq**. 🚀
+Upload your resume (PDF), paste a job description, and get an instant breakdown of how well you fit the role, plus tips to close the gaps and practice interview questions. 🎯
+
+---
+
+## ✨ Features
+
+- 📄 **Resume parsing**: extracts text from text-based PDF resumes using `pypdf`
+- 🧑‍💼 **Candidate profiling**: AI builds a structured profile (summary, years of experience, skills, education, key projects)
+- 📋 **Job requirement extraction**: pulls out role title, required vs. preferred skills, experience needed, and responsibilities
+- 📊 **Match score (0–100%)**: weighs required skills more heavily than preferred ones and factors in experience
+- ✅ **Matching skills**: requirements clearly backed up by your resume
+- ❌ **Missing skills**: important technical or role skills you haven't shown
+- ⚠️ **Not evidenced skills**: soft skills (e.g. communication) you may have but don't demonstrate
+- 💡 **Recommendations**: 3 practical, gap-based suggestions (no invented experience!)
+- 🎤 **Interview prep**: 5 role-specific interview questions
+- 🛡️ **Structured and validated output**: every AI response is checked against **Pydantic** models
+
+---
+
+## 🧠 How It Works
+
+```
+📄 Resume PDF ──► 🔍 Extract text ──► 🤖 Candidate profile ─┐
+                                                           ├──► ⚖️ Compare ──► 📊 Match report
+📝 Job description ─────────────────► 🤖 Job requirements ─┘
+```
+
+1. **📥 Input**: you upload a PDF resume and paste a job description.
+2. **🔍 Text extraction**: `pypdf` reads every page and joins the text.
+3. **🤖 Profile extraction**: the LLM returns JSON that is validated into a `CandidateProfile`.
+4. **📋 Requirements extraction**: the LLM returns JSON that is validated into a `JobRequirements`.
+5. **⚖️ Matching**: both are compared, and the result is validated into a `JobMatchResult`.
+6. **📊 Display**: Streamlit shows the profile, the requirements, the score, skill breakdowns, recommendations, and interview questions.
+
+> 🌡️ All LLM calls use `temperature=0` so results are consistent and factual.
+
+---
+
+## 🛠️ Tech Stack
+
+| Tool | Purpose |
+|------|---------|
+| 🐍 Python | Core language |
+| 🎈 Streamlit | Web UI |
+| ⚡ Groq | Fast LLM inference |
+| 📄 pypdf | PDF text extraction |
+| 🧱 Pydantic | Schema validation for AI output |
+| 🔐 python-dotenv | Environment variable management |
+
+---
+
+## 📁 Project Structure
+
+```
+job_agent/
+├── 🐍 app.py              # Streamlit app + AI pipeline
+├── 📦 requirements.txt    # Python dependencies
+├── 🔐 .env                # API keys (not committed)
+└── 🙈 .gitignore
+```
+
+---
+
+## ⚠️ Limitations
+
+- 🖼️ Only **text-based PDFs** are supported. Scanned or image-only resumes won't be read (no OCR).
+- 🤖 Match scores are AI-generated estimates, not hiring decisions.
+- 🌐 Requires an internet connection and a valid Groq API key.
+
+---
+
+## 🔮 Future Improvements
+
+- 🔍 OCR support for scanned resumes
+- 📑 DOCX resume support
+- 📥 Export the match report as a PDF
+- 🗂️ Compare one resume against several jobs at once
+- ✍️ AI-generated tailored cover letters
+
+---
+
