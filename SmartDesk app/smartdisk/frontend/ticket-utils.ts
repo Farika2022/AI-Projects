@@ -97,7 +97,7 @@ return{
     email: email,
     subject: subject,
     status: "open",
-    urgency: "MEDIUM",
+    urgency: "UNCLASSIFIED", // the server classifies it
     createdAt: createdAt,
 };
 }
@@ -147,6 +147,7 @@ const getTicketStats=(ticketArray: Ticket[]): TicketStats=>{
         high: ticketArray.filter((t)=>t.urgency==="HIGH").length,
         medium: ticketArray.filter((t) => t.urgency === "MEDIUM").length,
         low:    ticketArray.filter((t) => t.urgency === "LOW").length,
+        unclassified: ticketArray.filter((t) => t.urgency === "UNCLASSIFIED").length,
         open:   ticketArray.filter((t) => t.status === "open").length,
 
     };
@@ -344,7 +345,8 @@ const updateTicketStatus = async (ticketId: number, newStatus: string, token: st
 
 // -------------- SORTING --------------------
 // BY URGENCY LEVEL
-const urgencyOrder: Record<string, number> = {HIGH:0, MEDIUM:1, LOW:2};
+// UNCLASSIFIED sorts first — nobody knows yet whether it is a safety issue.
+const urgencyOrder: Record<string, number> = {UNCLASSIFIED:0, HIGH:1, MEDIUM:2, LOW:3};
 const sortByUrgency= (ticketArray:Ticket[]):Ticket[]=>{
 return [...ticketArray].sort(
   (a,b) => urgencyOrder[a.urgency]- urgencyOrder[b.urgency]
