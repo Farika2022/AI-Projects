@@ -1,4 +1,5 @@
 import { useState,useRef,useEffect} from 'react'
+import { Analytics } from '@vercel/analytics/react'
 import TicketList from './components/TicketList'
 import TicketForm from './components/TicketForm'
 import {
@@ -326,6 +327,7 @@ const visible = getSorted(
      */}
     </>
     )}
+   <Analytics />
    </div>
 
   );
